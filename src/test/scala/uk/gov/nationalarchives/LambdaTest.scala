@@ -88,7 +88,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   val childId: UUID = UUID.fromString("feedd76d-e368-45c8-96e3-c37671476793")
   val batchId: String = "TEST-ID"
   val executionName = "test-execution"
-  val inputJson: String = s"""{"batchId": "$batchId", "id": "$assetId", "executionName": "$executionName"}"""
+  val inputJson: String = s"""{"batchId": "$batchId", "id": "$assetId", "executionName": "$executionName", "sourceBucket": "test-source-bucket"}"""
 
   def standardInput: ByteArrayInputStream = new ByteArrayInputStream(inputJson.getBytes)
 
@@ -214,8 +214,8 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     val scanEvent = serveEvents.head
     val requestBody = scanEvent.getRequest.getBodyAsString
     val expectedRequestBody =
-      """{"TableName":"test-table","FilterExpression":"#A = :batchId AND #B = :parentPath","ExpressionAttributeNames":{"#A":"batchId","#B":"parentPath"},""" +
-        s""""ExpressionAttributeValues":{":batchId":{"S":"$batchId"},":parentPath":{"S":"$assetParentPath/$assetId"}}}"""
+      """{"TableName":"test-table","IndexName":"test-gsi","KeyConditionExpression":"#A = :batchId AND #B = :parentPath",""" +
+        s""""ExpressionAttributeNames":{"#A":"batchId","#B":"parentPath"},"ExpressionAttributeValues":{":batchId":{"S":"TEST-ID"},":parentPath":{"S":"$assetParentPath/$assetId"}}}"""
     expectedRequestBody should equal(requestBody)
   }
 

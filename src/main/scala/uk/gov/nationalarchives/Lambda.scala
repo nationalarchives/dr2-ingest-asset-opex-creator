@@ -51,7 +51,7 @@ class Lambda extends RequestStreamHandler {
 
   private def copyFromSourceToDestination(input: Input, config: Config, asset: DynamoTable, child: DynamoTable) = {
     s3Client.copy(
-      config.sourceBucket,
+      input.sourceBucket,
       s"${input.batchId}/data/${child.id}",
       config.destinationBucket,
       destinationPath(input, asset, child)
@@ -75,9 +75,9 @@ class Lambda extends RequestStreamHandler {
 object Lambda {
   implicit val treInputReader: Reader[Input] = macroR[Input]
 
-  case class Input(id: UUID, batchId: String, executionName: String)
+  case class Input(id: UUID, batchId: String, executionName: String, sourceBucket: String)
 
-  private case class Config(dynamoTableName: String, dynamoGsiName: String, sourceBucket: String, destinationBucket: String)
+  private case class Config(dynamoTableName: String, dynamoGsiName: String, destinationBucket: String)
 
   private case class Pk(id: UUID)
 
