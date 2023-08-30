@@ -57,8 +57,9 @@ opex
 
 ## Environment Variables
 
-| Name               | Description                                                  |
-|--------------------|--------------------------------------------------------------|
-| DYNAMO_TABLE_NAME  | The name of the table to read assets and their children from |
-| SOURCE_BUCKET      | The raw bucket to copy the files from                        |
-| DESTINATION_BUCKET | The staging bucket to copy the files to                      |
+| Name               | Description                                                                         |
+|--------------------|-------------------------------------------------------------------------------------|
+| DYNAMO_TABLE_NAME  | The name of the table to read assets and their children from                        |
+| SOURCE_BUCKET      | The raw bucket to copy the files from                                               |
+| DESTINATION_BUCKET | The staging bucket to copy the files to                                             |
+| DYNAMO_GSI_NAME    | The name of the global secondary index. This is used for querying fields in the GSI |

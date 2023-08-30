@@ -34,7 +34,7 @@ class Lambda extends RequestStreamHandler {
       asset <- IO.fromOption(assetItems.headOption)(
         new Exception(s"No asset found for ${input.id} and ${input.batchId}")
       )
-      children <- childrenOfAsset(asset, config.dynamoTableName)
+      children <- childrenOfAsset(asset, config.dynamoTableName, config.dynamoGsiName)
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
       _ <- children.map(child => copyFromSourceToDestination(input, config, asset, child)).sequence
       xip <- xmlCreator.createXip(asset, children)
@@ -65,10 +65,10 @@ class Lambda extends RequestStreamHandler {
   private def destinationPath(input: Input, asset: DynamoTable, child: DynamoTable) =
     s"${assetPath(input, asset)}/${xmlCreator.bitstreamPath(child)}/${xmlCreator.childFileName(child)}"
 
-  private def childrenOfAsset(asset: DynamoTable, tableName: String): IO[List[DynamoTable]] = {
+  private def childrenOfAsset(asset: DynamoTable, tableName: String, gsiName: String): IO[List[DynamoTable]] = {
     val childrenParentPath = s"${asset.parentPath}/${asset.id}"
     dynamoClient
-      .scanItems[DynamoTable](tableName, "batchId" === asset.batchId and "parentPath" === childrenParentPath)
+      .queryItems[DynamoTable](tableName, gsiName, "batchId" === asset.batchId and "parentPath" === childrenParentPath)
   }
 }
 
@@ -77,7 +77,7 @@ object Lambda {
 
   case class Input(id: UUID, batchId: String, executionName: String)
 
-  private case class Config(dynamoTableName: String, sourceBucket: String, destinationBucket: String)
+  private case class Config(dynamoTableName: String, dynamoGsiName: String, sourceBucket: String, destinationBucket: String)
 
   private case class Pk(id: UUID)
 
