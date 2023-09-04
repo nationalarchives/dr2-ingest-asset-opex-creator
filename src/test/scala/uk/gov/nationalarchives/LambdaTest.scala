@@ -76,11 +76,11 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
         .willReturn(ok().withBody(batchGetResponse))
     )
 
-  def stubScanRequest(scanResponse: String): Unit =
+  def stubQueryRequest(queryResponse: String): Unit =
     dynamoServer.stubFor(
       post(urlEqualTo("/"))
         .withRequestBody(matchingJsonPath("$.TableName", equalTo("test-table")))
-        .willReturn(ok().withBody(scanResponse))
+        .willReturn(ok().withBody(queryResponse))
     )
 
   val assetId: UUID = UUID.fromString("68b1c80b-36b8-4f0f-94d6-92589002d87e")
@@ -95,8 +95,8 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   def outputStream: ByteArrayOutputStream = new ByteArrayOutputStream()
 
   val emptyDynamoGetResponse: String = """{"Responses": {"test-table": []}}"""
-  val emptyDynamoScanResponse: String = """{"Count": 0, "Items": []}"""
-  val dynamoScanResponse: String =
+  val emptyDynamoQueryResponse: String = """{"Count": 0, "Items": []}"""
+  val dynamoQueryResponse: String =
     s"""{
       |  "Count": 2,
       |  "Items": [
@@ -126,8 +126,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       |        "S": "$batchId"
       |      }
       |    }
-      |  ],
-      |  "ScannedCount": 6
+      |  ]
       |}
       |""".stripMargin
   val dynamoGetResponse: String =
@@ -187,14 +186,23 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "return an error if no children are found for the asset" in {
     stubGetRequest(dynamoGetResponse)
-    stubScanRequest(emptyDynamoScanResponse)
+    stubQueryRequest(emptyDynamoQueryResponse)
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
     ex.getMessage should equal(s"No children found for $assetId and $batchId")
   }
 
-  "handleRequest" should "pass the correct id to dynamo get item" in {
+  "handleRequest" should "return an error if the dynamo entry does not have a type of 'asset'" in {
+    stubGetRequest(dynamoGetResponse.replace("Asset", "Folder"))
+    stubQueryRequest(emptyDynamoQueryResponse)
+    val ex = intercept[Exception] {
+      TestLambda().handleRequest(standardInput, outputStream, null)
+    }
+    ex.getMessage should equal(s"Object $assetId is of type Folder and not 'asset'")
+  }
+
+  "handleRequest" should "pass the correct id to dynamo getItem" in {
     stubGetRequest(emptyDynamoGetResponse)
     intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
@@ -204,15 +212,15 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     serveEvents.head.getRequest.getBodyAsString should equal(s"""{"RequestItems":{"test-table":{"Keys":[{"id":{"S":"$assetId"}}]}}}""")
   }
 
-  "handleRequest" should "pass the correct parameters to dynamo for the scan request" in {
+  "handleRequest" should "pass the correct parameters to dynamo for the query request" in {
     stubGetRequest(dynamoGetResponse)
-    stubScanRequest(emptyDynamoScanResponse)
+    stubQueryRequest(emptyDynamoQueryResponse)
     intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
     val serveEvents = dynamoServer.getAllServeEvents.asScala
-    val scanEvent = serveEvents.head
-    val requestBody = scanEvent.getRequest.getBodyAsString
+    val queryEvent = serveEvents.head
+    val requestBody = queryEvent.getRequest.getBodyAsString
     val expectedRequestBody =
       """{"TableName":"test-table","IndexName":"test-gsi","KeyConditionExpression":"#A = :batchId AND #B = :parentPath",""" +
         s""""ExpressionAttributeNames":{"#A":"batchId","#B":"parentPath"},"ExpressionAttributeValues":{":batchId":{"S":"TEST-ID"},":parentPath":{"S":"$assetParentPath/$assetId"}}}"""
@@ -221,7 +229,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "copy the correct child assets from source to destination" in {
     stubGetRequest(dynamoGetResponse)
-    stubScanRequest(dynamoScanResponse)
+    stubQueryRequest(dynamoQueryResponse)
     val source = s"/$batchId/data/$childId"
     val destination = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/${childId}/Generation_1/$childId.json"
     stubCopyRequest(source, destination)
@@ -239,7 +247,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "upload the xip and opex files" in {
     stubGetRequest(dynamoGetResponse)
-    stubScanRequest(dynamoScanResponse)
+    stubQueryRequest(dynamoQueryResponse)
     val source = s"/$batchId/data/$childId"
     val destination = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childId/Generation_1/$childId.json"
     val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
@@ -265,7 +273,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   "handleRequest" should "return an error if the S3 API is unavailable" in {
     s3Server.stop()
     stubGetRequest(dynamoGetResponse)
-    stubScanRequest(dynamoScanResponse)
+    stubQueryRequest(dynamoQueryResponse)
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }

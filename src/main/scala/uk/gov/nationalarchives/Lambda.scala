@@ -14,6 +14,7 @@ import uk.gov.nationalarchives.Lambda._
 import upickle.default._
 import fs2.Stream
 import fs2.interop.reactivestreams.StreamOps
+import org.scanamo.{DynamoFormat, TypeCoercionError}
 import software.amazon.awssdk.transfer.s3.model.CompletedUpload
 
 import java.io.{InputStream, OutputStream}
@@ -25,18 +26,29 @@ class Lambda extends RequestStreamHandler {
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
 
+  implicit val typeFormat: Typeclass[Type] = DynamoFormat.xmap[Type, String](
+    {
+      case "Folder"   => Right(Folder)
+      case "Asset"    => Right(Asset)
+      case "File"     => Right(File)
+      case typeString => Left(TypeCoercionError(new Exception(s"Type $typeString not found")))
+    },
+    typeObject => typeObject.toString
+  )
+
   override def handleRequest(inputStream: InputStream, outputStream: OutputStream, context: Context): Unit = {
     val inputString = inputStream.readAllBytes().map(_.toChar).mkString
     val input = read[Input](inputString)
     for {
       config <- ConfigSource.default.loadF[IO, Config]()
-      assetItems <- dynamoClient.getItems[DynamoTable, Pk](List(Pk(input.id)), config.dynamoTableName)
+      assetItems <- dynamoClient.getItems[DynamoTable, PartitionKey](List(PartitionKey(input.id)), config.dynamoTableName)
       asset <- IO.fromOption(assetItems.headOption)(
         new Exception(s"No asset found for ${input.id} and ${input.batchId}")
       )
+      _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'asset'")) else IO.unit
       children <- childrenOfAsset(asset, config.dynamoTableName, config.dynamoGsiName)
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
-      _ <- children.map(child => copyFromSourceToDestination(input, config, asset, child)).sequence
+      _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child)).sequence
       xip <- xmlCreator.createXip(asset, children)
       _ <- uploadXMLToS3(xip, config.destinationBucket, s"${assetPath(input, asset)}/${asset.id}.xip")
       opex <- xmlCreator.createOpex(asset, children, xip.getBytes.length)
@@ -49,11 +61,11 @@ class Lambda extends RequestStreamHandler {
       s3Client.upload(destinationBucket, key, xmlString.getBytes.length, publisher)
     }
 
-  private def copyFromSourceToDestination(input: Input, config: Config, asset: DynamoTable, child: DynamoTable) = {
+  private def copyFromSourceToDestination(input: Input, destinationBucket: String, asset: DynamoTable, child: DynamoTable) = {
     s3Client.copy(
       input.sourceBucket,
       s"${input.batchId}/data/${child.id}",
-      config.destinationBucket,
+      destinationBucket,
       destinationPath(input, asset, child)
     )
   }
@@ -79,13 +91,28 @@ object Lambda {
 
   private case class Config(dynamoTableName: String, dynamoGsiName: String, destinationBucket: String)
 
-  private case class Pk(id: UUID)
+  private case class PartitionKey(id: UUID)
+
+  sealed trait Type {
+    override def toString: String = this match {
+      case Folder => "Folder"
+      case Asset  => "Asset"
+      case File   => "File"
+    }
+  }
+
+  case object Folder extends Type
+
+  case object Asset extends Type
+
+  case object File extends Type
 
   case class DynamoTable(
       batchId: String,
       id: UUID,
       parentPath: String,
       name: String,
+      `type`: Type,
       title: String,
       description: String,
       fileSize: Option[Long] = None,

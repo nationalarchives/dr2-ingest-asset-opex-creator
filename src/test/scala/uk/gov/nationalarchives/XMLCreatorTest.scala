@@ -3,7 +3,7 @@ package uk.gov.nationalarchives
 import cats.effect.unsafe.implicits.global
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
-import uk.gov.nationalarchives.Lambda.DynamoTable
+import uk.gov.nationalarchives.Lambda.{Asset, DynamoTable}
 
 import java.util.UUID
 import scala.xml.{Elem, PrettyPrinter}
@@ -103,6 +103,7 @@ class XMLCreatorTest extends AnyFlatSpec {
     UUID.fromString("90730c77-8faa-4dbf-b20d-bba1046dac87"),
     "parentPath",
     "name",
+    Asset,
     "title",
     "description",
     Option(1),
@@ -111,7 +112,18 @@ class XMLCreatorTest extends AnyFlatSpec {
   )
   val uuids: List[UUID] = List(UUID.fromString("a814ee41-89f4-4975-8f92-303553fe9a02"), UUID.fromString("9ecbba86-437f-42c6-aeba-e28b678bbf4c"))
   val children: List[DynamoTable] = uuids.zipWithIndex.map { case (uuid, suffix) =>
-    DynamoTable("TEST-ID", uuid, s"parentPath$suffix", s"name$suffix", s"title$suffix", s"description$suffix", Option(1), Option(s"checksum$suffix"), Option(s"ext$suffix"))
+    DynamoTable(
+      "TEST-ID",
+      uuid,
+      s"parentPath$suffix",
+      s"name$suffix",
+      Asset,
+      s"title$suffix",
+      s"description$suffix",
+      Option(1),
+      Option(s"checksum$suffix"),
+      Option(s"ext$suffix")
+    )
   }
 
   "createOpex" should "create the correct opex xml" in {

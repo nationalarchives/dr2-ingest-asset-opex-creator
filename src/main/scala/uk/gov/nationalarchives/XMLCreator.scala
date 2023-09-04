@@ -28,7 +28,8 @@ class XMLCreator {
   private[nationalarchives] def createOpex(
       asset: DynamoTable,
       children: List[DynamoTable],
-      assetXipSize: Long
+      assetXipSize: Long,
+      securityDescriptor: String = "open"
   ): IO[String] = IO {
     val xml =
       <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.0">
@@ -52,17 +53,17 @@ class XMLCreator {
         <opex:Properties>
           <opex:Title>{asset.name}</opex:Title>
           <opex:Description>{asset.description}</opex:Description>
-          <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
+          <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
         </opex:Properties>
       </opex:OPEXMetadata>
     prettyPrinter.format(xml)
   }
 
-  private[nationalarchives] def createXip(asset: DynamoTable, children: List[DynamoTable]): IO[String] = {
+  private[nationalarchives] def createXip(asset: DynamoTable, children: List[DynamoTable], securityTag: String = "open"): IO[String] = {
     val xip = <XIP xmlns="http://preservica.com/XIP/v6.4">
       <InformationObject>
         <Ref>{asset.id}</Ref>
-        <SecurityTag>open</SecurityTag>
+        <SecurityTag>{securityTag}</SecurityTag>
         <Title/>
       </InformationObject>
       <Representation>
@@ -78,7 +79,7 @@ class XMLCreator {
             <Ref>{child.id}</Ref>
             <Title>{child.name}</Title>
             <Parent>{asset.id}</Parent>
-            <SecurityTag>open</SecurityTag>
+            <SecurityTag>{securityTag}</SecurityTag>
           </ContentObject>
             <Generation original="true" active="true">
               <ContentObject>{child.id}</ContentObject>
