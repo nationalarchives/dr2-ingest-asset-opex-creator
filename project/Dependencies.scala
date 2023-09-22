@@ -14,5 +14,5 @@ object Dependencies {
   lazy val dynamoClient = "uk.gov.nationalarchives" %% "da-dynamodb-client" % "0.1.19"
   lazy val s3Client = "uk.gov.nationalarchives" %% "da-s3-client" % "0.1.17"
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.15"
-  lazy val wiremock = "com.github.tomakehurst" % "wiremock" % "2.27.2"
+  lazy val wiremock = "com.github.tomakehurst" % "wiremock" % "3.0.1"
 }
