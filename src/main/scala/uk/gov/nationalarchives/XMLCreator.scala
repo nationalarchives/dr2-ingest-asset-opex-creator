@@ -51,7 +51,7 @@ class XMLCreator {
           </opex:Manifest>
         </opex:Transfer>
         <opex:Properties>
-          <opex:Title>{asset.name}</opex:Title>
+          <opex:Title>{if (asset.title.isBlank) asset.name else asset.title}</opex:Title>
           <opex:Description>{asset.description}</opex:Description>
           <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
         </opex:Properties>
@@ -64,7 +64,7 @@ class XMLCreator {
       <InformationObject>
         <Ref>{asset.id}</Ref>
         <SecurityTag>{securityTag}</SecurityTag>
-        <Title/>
+        <Title>Preservation</Title>
       </InformationObject>
       <Representation>
         <InformationObject>{asset.id}</InformationObject>
@@ -73,36 +73,36 @@ class XMLCreator {
         <ContentObjects>
           {children.map(child => <ContentObject>{child.id}</ContentObject>)}
         </ContentObjects>
-        {
+      </Representation>
+      {
       children.map { child =>
         <ContentObject>
-            <Ref>{child.id}</Ref>
-            <Title>{child.name}</Title>
-            <Parent>{asset.id}</Parent>
-            <SecurityTag>{securityTag}</SecurityTag>
-          </ContentObject>
-            <Generation original="true" active="true">
-              <ContentObject>{child.id}</ContentObject>
-              <Bitstreams>
-                <Bitstream>{bitstreamPath(child)}/{childFileName(child)}</Bitstream>
-              </Bitstreams>
-            </Generation>
-            <Bitstream>
-              <Filename>{childFileName(child)}</Filename>
-              <FileSize>{child.fileSize.getOrElse(0)}</FileSize>
-              <PhysicalLocation>{bitstreamPath(child)}</PhysicalLocation>
-              <Fixities>
-                <Fixity>
-                  <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
-                  <FixityValue>{child.checksumSha256.getOrElse("")}</FixityValue>
-                </Fixity>
-              </Fixities>
-            </Bitstream>
+          <Ref>{child.id}</Ref>
+          <Title>{child.name}</Title>
+          <Parent>{asset.id}</Parent>
+          <SecurityTag>{securityTag}</SecurityTag>
+        </ContentObject>
+          <Generation original="true" active="true">
+            <ContentObject>{child.id}</ContentObject>
+            <Bitstreams>
+              <Bitstream>{bitstreamPath(child)}/{childFileName(child)}</Bitstream>
+            </Bitstreams>
+          </Generation>
+          <Bitstream>
+            <Filename>{childFileName(child)}</Filename>
+            <FileSize>{child.fileSize.getOrElse(0)}</FileSize>
+            <PhysicalLocation>{bitstreamPath(child)}</PhysicalLocation>
+            <Fixities>
+              <Fixity>
+                <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
+                <FixityValue>{child.checksum_sha256.getOrElse("")}</FixityValue>
+              </Fixity>
+            </Fixities>
+          </Bitstream>
       }
     }
-      </Representation>
-    </XIP>
-    IO(prettyPrinter.format(xip))
+  </XIP>
+    IO(prettyPrinter.format(xip) + "\n")
   }
 }
 object XMLCreator {

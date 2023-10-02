@@ -49,7 +49,7 @@ class Lambda extends RequestStreamHandler {
       children <- childrenOfAsset(asset, config.dynamoTableName, config.dynamoGsiName)
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
       _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child)).sequence
-      xip <- xmlCreator.createXip(asset, children)
+      xip <- xmlCreator.createXip(asset, children.sortBy(_.sortOrder.getOrElse(Int.MaxValue)))
       _ <- uploadXMLToS3(xip, config.destinationBucket, s"${assetPath(input, asset)}/${asset.id}.xip")
       opex <- xmlCreator.createOpex(asset, children, xip.getBytes.length)
       _ <- uploadXMLToS3(opex, config.destinationBucket, s"${parentPath(input, asset)}/${asset.id}.pax.opex")
@@ -115,8 +115,9 @@ object Lambda {
       `type`: Type,
       title: String,
       description: String,
+      sortOrder: Option[Int] = None,
       fileSize: Option[Long] = None,
-      checksumSha256: Option[String] = None,
+      checksum_sha256: Option[String] = None,
       fileExtension: Option[String] = None
   )
 }

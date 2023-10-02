@@ -16,6 +16,7 @@ import java.io.ByteArrayInputStream
 import java.net.URI
 import java.util.UUID
 import scala.jdk.CollectionConverters._
+import scala.xml.XML
 
 class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   val dynamoServer = new WireMockServer(9005)
@@ -85,7 +86,8 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   val assetId: UUID = UUID.fromString("68b1c80b-36b8-4f0f-94d6-92589002d87e")
   val assetParentPath: String = "a/parent/path"
-  val childId: UUID = UUID.fromString("feedd76d-e368-45c8-96e3-c37671476793")
+  val childIdJson: UUID = UUID.fromString("feedd76d-e368-45c8-96e3-c37671476793")
+  val childIdDocx: UUID = UUID.fromString("a25d33f3-7726-4fb3-8e6f-f66358451c4e")
   val batchId: String = "TEST-ID"
   val executionName = "test-execution"
   val inputJson: String = s"""{"batchId": "$batchId", "id": "$assetId", "executionName": "$executionName", "sourceBucket": "test-source-bucket"}"""
@@ -102,16 +104,48 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       |  "Items": [
       |    {
       |      "checksumSha256": {
+      |        "S": "checksumdocx"
+      |      },
+      |      "fileExtension": {
+      |        "S": "docx"
+      |      },
+      |      "fileSize": {
+      |        "N": "1"
+      |      },
+      |      "sortOrder": {
+      |        "N": "1"
+      |      },
+      |      "id": {
+      |        "S": "$childIdDocx"
+      |      },
+      |      "parentPath": {
+      |        "S": "parent/path"
+      |      },
+      |      "name": {
+      |        "S": "$batchId.docx"
+      |      },
+      |      "type": {
+      |        "S": "File"
+      |      },
+      |      "batchId": {
+      |        "S": "$batchId"
+      |      }
+      |    },
+      |    {
+      |      "checksum_sha256": {
       |        "S": "checksum"
       |      },
       |      "fileExtension": {
       |        "S": "json"
       |      },
       |      "fileSize": {
-      |        "N": "1"
+      |        "N": "2"
+      |      },
+      |      "sortOrder": {
+      |        "N": "2"
       |      },
       |      "id": {
-      |        "S": "$childId"
+      |        "S": "$childIdJson"
       |      },
       |      "parentPath": {
       |        "S": "parent/path"
@@ -230,36 +264,72 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   "handleRequest" should "copy the correct child assets from source to destination" in {
     stubGetRequest(dynamoGetResponse)
     stubQueryRequest(dynamoQueryResponse)
-    val source = s"/$batchId/data/$childId"
-    val destination = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/${childId}/Generation_1/$childId.json"
-    stubCopyRequest(source, destination)
+    val sourceJson = s"/$batchId/data/$childIdJson"
+    val destinationJson = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdJson/Generation_1/$childIdJson.json"
+    stubCopyRequest(sourceJson, destinationJson)
+    val sourceDocx = s"/$batchId/data/$childIdDocx"
+    val destinationDocx = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdDocx/Generation_1/$childIdDocx.docx"
+    stubCopyRequest(sourceDocx, destinationDocx)
     val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
     val opexPath = s"/opex/$executionName/$assetParentPath/$assetId.pax.opex"
     stubPutRequest(xipPath, opexPath)
 
     TestLambda().handleRequest(standardInput, outputStream, null)
 
-    val s3CopyRequest = s3Server.getAllServeEvents.asScala.filter(_.getRequest.getUrl == destination).head.getRequest
-    s3CopyRequest.getUrl should equal(destination)
-    s3CopyRequest.getHost should equal("test-destination-bucket.localhost")
-    s3CopyRequest.getHeader("x-amz-copy-source") should equal(s"test-source-bucket$source")
+    def checkCopyRequest(source: String, destination: String) = {
+      val s3CopyRequest = s3Server.getAllServeEvents.asScala.filter(_.getRequest.getUrl == destination).head.getRequest
+      s3CopyRequest.getUrl should equal(destination)
+      s3CopyRequest.getHost should equal("test-destination-bucket.localhost")
+      s3CopyRequest.getHeader("x-amz-copy-source") should equal(s"test-source-bucket$source")
+    }
+    checkCopyRequest(sourceJson, destinationJson)
+    checkCopyRequest(sourceDocx, destinationDocx)
+
   }
 
   "handleRequest" should "upload the xip and opex files" in {
     stubGetRequest(dynamoGetResponse)
     stubQueryRequest(dynamoQueryResponse)
-    val source = s"/$batchId/data/$childId"
-    val destination = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childId/Generation_1/$childId.json"
+    val sourceJson = s"/$batchId/data/$childIdJson"
+    val destinationJson = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdJson/Generation_1/$childIdJson.json"
+    val sourceDocx = s"/$batchId/data/$childIdDocx"
+    val destinationDocx = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdDocx/Generation_1/$childIdDocx.docx"
     val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
     val opexPath = s"/opex/$executionName/$assetParentPath/$assetId.pax.opex"
     stubPutRequest(xipPath, opexPath)
-    stubCopyRequest(source, destination)
+    stubCopyRequest(sourceJson, destinationJson)
+    stubCopyRequest(sourceDocx, destinationDocx)
 
     TestLambda().handleRequest(standardInput, outputStream, null)
 
     val s3CopyRequests = s3Server.getAllServeEvents.asScala
+    val d = s3CopyRequests.filter(_.getRequest.getUrl == xipPath).head
+    print(d)
+    d.getRequest.getBodyAsString.split("\n").tail.dropRight(4).mkString("\n")
     s3CopyRequests.count(_.getRequest.getUrl == xipPath) should equal(1)
     s3CopyRequests.count(_.getRequest.getUrl == opexPath) should equal(1)
+  }
+
+  "handleRequest" should "write the xip content objects in the correct order" in {
+    stubGetRequest(dynamoGetResponse)
+    stubQueryRequest(dynamoQueryResponse)
+    val sourceJson = s"/$batchId/data/$childIdJson"
+    val destinationJson = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdJson/Generation_1/$childIdJson.json"
+    val sourceDocx = s"/$batchId/data/$childIdDocx"
+    val destinationDocx = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdDocx/Generation_1/$childIdDocx.docx"
+    val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
+    val opexPath = s"/opex/$executionName/$assetParentPath/$assetId.pax.opex"
+    stubPutRequest(xipPath, opexPath)
+    stubCopyRequest(sourceJson, destinationJson)
+    stubCopyRequest(sourceDocx, destinationDocx)
+
+    TestLambda().handleRequest(standardInput, outputStream, null)
+
+    val s3CopyRequests = s3Server.getAllServeEvents.asScala
+    val xipString = s3CopyRequests.filter(_.getRequest.getUrl == xipPath).head.getRequest.getBodyAsString.split("\n").tail.dropRight(4).mkString("\n")
+    val contentObjects = XML.loadString(xipString) \ "Representation" \ "ContentObjects" \ "ContentObject"
+    contentObjects.head.text should equal(childIdDocx.toString)
+    contentObjects.last.text should equal(childIdJson.toString)
   }
 
   "handleRequest" should "return an error if the Dynamo API is unavailable" in {
