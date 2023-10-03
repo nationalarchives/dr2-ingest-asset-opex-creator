@@ -303,9 +303,6 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     TestLambda().handleRequest(standardInput, outputStream, null)
 
     val s3CopyRequests = s3Server.getAllServeEvents.asScala
-    val d = s3CopyRequests.filter(_.getRequest.getUrl == xipPath).head
-    print(d)
-    d.getRequest.getBodyAsString.split("\n").tail.dropRight(4).mkString("\n")
     s3CopyRequests.count(_.getRequest.getUrl == xipPath) should equal(1)
     s3CopyRequests.count(_.getRequest.getUrl == opexPath) should equal(1)
   }
