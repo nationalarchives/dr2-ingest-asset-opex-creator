@@ -113,7 +113,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       |  "Count": 2,
       |  "Items": [
       |    {
-      |      "checksumSha256": {
+      |      "checksum_sha256": {
       |        "S": "checksumdocx"
       |      },
       |      "fileExtension": {
