@@ -289,8 +289,6 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     }
     checkCopyRequest(sourceJson, destinationJson)
     checkCopyRequest(sourceDocx, destinationDocx)
-    val d = s3Server.getAllServeEvents.asScala.filter(_.getRequest.getMethod == RequestMethod.PUT)
-    print(d)
   }
 
   "handleRequest" should "upload the xip and opex files" in {
