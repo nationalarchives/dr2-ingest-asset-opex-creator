@@ -3,6 +3,7 @@ package uk.gov.nationalarchives
 import cats.effect.IO
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.http.RequestMethod
 import org.apache.commons.io.output.ByteArrayOutputStream
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
@@ -34,8 +35,10 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     s3Server.stop()
   }
 
-  def stubPutRequest(itemPaths: String*): Unit = {
-    itemPaths.foreach { itemPath =>
+  def stubPutRequest(): (String, String) = {
+    val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
+    val opexPath = s"/opex/$executionName/$assetParentPath/$assetId.pax.opex"
+    List(xipPath, opexPath).foreach { itemPath =>
       s3Server.stubFor(
         put(urlEqualTo(itemPath))
           .withHost(equalTo("test-destination-bucket.localhost"))
@@ -46,9 +49,16 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
           .willReturn(ok())
       )
     }
+    (xipPath, opexPath)
   }
 
-  def stubCopyRequest(sourceName: String, destinationName: String): Unit = {
+  def stubJsonCopyRequest(): (String, String) = stubCopyRequest(childIdJson, "json")
+
+  def stubDocxCopyRequest(): (String, String) = stubCopyRequest(childIdDocx, "docx")
+
+  def stubCopyRequest(childId: UUID, suffix: String): (String, String) = {
+    val sourceName = s"/$batchId/data/$childId"
+    val destinationName = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childId/Generation_1/$childId.$suffix"
     val response =
       <CopyObjectResult>
         <LastModified>2023-08-29T17:50:30.000Z</LastModified>
@@ -68,6 +78,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
         .withHeader("x-amz-copy-source", equalTo(s"test-source-bucket$sourceName"))
         .willReturn(okXml(response.toString()))
     )
+    (sourceName, destinationName)
   }
 
   def stubGetRequest(batchGetResponse: String): Unit =
@@ -264,15 +275,9 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   "handleRequest" should "copy the correct child assets from source to destination" in {
     stubGetRequest(dynamoGetResponse)
     stubQueryRequest(dynamoQueryResponse)
-    val sourceJson = s"/$batchId/data/$childIdJson"
-    val destinationJson = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdJson/Generation_1/$childIdJson.json"
-    stubCopyRequest(sourceJson, destinationJson)
-    val sourceDocx = s"/$batchId/data/$childIdDocx"
-    val destinationDocx = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdDocx/Generation_1/$childIdDocx.docx"
-    stubCopyRequest(sourceDocx, destinationDocx)
-    val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
-    val opexPath = s"/opex/$executionName/$assetParentPath/$assetId.pax.opex"
-    stubPutRequest(xipPath, opexPath)
+    val (sourceJson, destinationJson) = stubJsonCopyRequest()
+    val (sourceDocx, destinationDocx) = stubDocxCopyRequest()
+    stubPutRequest()
 
     TestLambda().handleRequest(standardInput, outputStream, null)
 
@@ -284,21 +289,16 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     }
     checkCopyRequest(sourceJson, destinationJson)
     checkCopyRequest(sourceDocx, destinationDocx)
-
+    val d = s3Server.getAllServeEvents.asScala.filter(_.getRequest.getMethod == RequestMethod.PUT)
+    print(d)
   }
 
   "handleRequest" should "upload the xip and opex files" in {
     stubGetRequest(dynamoGetResponse)
     stubQueryRequest(dynamoQueryResponse)
-    val sourceJson = s"/$batchId/data/$childIdJson"
-    val destinationJson = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdJson/Generation_1/$childIdJson.json"
-    val sourceDocx = s"/$batchId/data/$childIdDocx"
-    val destinationDocx = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdDocx/Generation_1/$childIdDocx.docx"
-    val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
-    val opexPath = s"/opex/$executionName/$assetParentPath/$assetId.pax.opex"
-    stubPutRequest(xipPath, opexPath)
-    stubCopyRequest(sourceJson, destinationJson)
-    stubCopyRequest(sourceDocx, destinationDocx)
+    val (xipPath, opexPath) = stubPutRequest()
+    stubJsonCopyRequest()
+    stubDocxCopyRequest()
 
     TestLambda().handleRequest(standardInput, outputStream, null)
 
@@ -310,15 +310,9 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   "handleRequest" should "write the xip content objects in the correct order" in {
     stubGetRequest(dynamoGetResponse)
     stubQueryRequest(dynamoQueryResponse)
-    val sourceJson = s"/$batchId/data/$childIdJson"
-    val destinationJson = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdJson/Generation_1/$childIdJson.json"
-    val sourceDocx = s"/$batchId/data/$childIdDocx"
-    val destinationDocx = s"/opex/$executionName/$assetParentPath/$assetId.pax/Representation_Preservation/$childIdDocx/Generation_1/$childIdDocx.docx"
-    val xipPath = s"/opex/$executionName/$assetParentPath/$assetId.pax/$assetId.xip"
-    val opexPath = s"/opex/$executionName/$assetParentPath/$assetId.pax.opex"
-    stubPutRequest(xipPath, opexPath)
-    stubCopyRequest(sourceJson, destinationJson)
-    stubCopyRequest(sourceDocx, destinationDocx)
+    val (xipPath, _) = stubPutRequest()
+    stubJsonCopyRequest()
+    stubDocxCopyRequest()
 
     TestLambda().handleRequest(standardInput, outputStream, null)
 
