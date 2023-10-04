@@ -29,7 +29,7 @@ class XMLCreatorTest extends AnyFlatSpec {
       </opex:Manifest>
     </opex:Transfer>
     <opex:Properties>
-      <opex:Title>name</opex:Title>
+      <opex:Title>title</opex:Title>
       <opex:Description>description</opex:Description>
       <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
     </opex:Properties>
@@ -39,7 +39,7 @@ class XMLCreatorTest extends AnyFlatSpec {
     <InformationObject>
       <Ref>90730c77-8faa-4dbf-b20d-bba1046dac87</Ref>
       <SecurityTag>open</SecurityTag>
-      <Title/>
+      <Title>Preservation</Title>
     </InformationObject>
     <Representation>
       <InformationObject>90730c77-8faa-4dbf-b20d-bba1046dac87</InformationObject>
@@ -49,53 +49,53 @@ class XMLCreatorTest extends AnyFlatSpec {
         <ContentObject>a814ee41-89f4-4975-8f92-303553fe9a02</ContentObject>
         <ContentObject>9ecbba86-437f-42c6-aeba-e28b678bbf4c</ContentObject>
       </ContentObjects>
-      <ContentObject>
-        <Ref>a814ee41-89f4-4975-8f92-303553fe9a02</Ref>
-        <Title>name0</Title>
-        <Parent>90730c77-8faa-4dbf-b20d-bba1046dac87</Parent>
-        <SecurityTag>open</SecurityTag>
-      </ContentObject>
-      <Generation original="true" active="true">
-        <ContentObject>a814ee41-89f4-4975-8f92-303553fe9a02</ContentObject>
-        <Bitstreams>
-          <Bitstream>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1/a814ee41-89f4-4975-8f92-303553fe9a02.ext0</Bitstream>
-        </Bitstreams>
-      </Generation>
-      <Bitstream>
-        <Filename>a814ee41-89f4-4975-8f92-303553fe9a02.ext0</Filename>
-        <FileSize>1</FileSize>
-        <PhysicalLocation>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1</PhysicalLocation>
-        <Fixities>
-          <Fixity>
-            <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
-            <FixityValue>checksum0</FixityValue>
-          </Fixity>
-        </Fixities>
-      </Bitstream>
-      <ContentObject>
-        <Ref>9ecbba86-437f-42c6-aeba-e28b678bbf4c</Ref>
-        <Title>name1</Title>
-        <Parent>90730c77-8faa-4dbf-b20d-bba1046dac87</Parent>
-        <SecurityTag>open</SecurityTag>
-      </ContentObject>
-      <Generation original="true" active="true">
-        <ContentObject>9ecbba86-437f-42c6-aeba-e28b678bbf4c</ContentObject>
-        <Bitstreams>
-          <Bitstream>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1/9ecbba86-437f-42c6-aeba-e28b678bbf4c.ext1</Bitstream>
-        </Bitstreams>
-      </Generation>
-      <Bitstream>
-        <Filename>9ecbba86-437f-42c6-aeba-e28b678bbf4c.ext1</Filename>
-        <FileSize>1</FileSize>
-        <PhysicalLocation>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1</PhysicalLocation>
-        <Fixities>
-          <Fixity>
-            <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
+    </Representation>
+    <ContentObject>
+      <Ref>a814ee41-89f4-4975-8f92-303553fe9a02</Ref>
+      <Title>name0</Title>
+      <Parent>90730c77-8faa-4dbf-b20d-bba1046dac87</Parent>
+      <SecurityTag>open</SecurityTag>
+    </ContentObject>
+    <Generation original="true" active="true">
+      <ContentObject>a814ee41-89f4-4975-8f92-303553fe9a02</ContentObject>
+      <Bitstreams>
+        <Bitstream>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1/a814ee41-89f4-4975-8f92-303553fe9a02.ext0</Bitstream>
+      </Bitstreams>
+    </Generation>
+    <Bitstream>
+      <Filename>a814ee41-89f4-4975-8f92-303553fe9a02.ext0</Filename>
+      <FileSize>1</FileSize>
+      <PhysicalLocation>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1</PhysicalLocation>
+      <Fixities>
+        <Fixity>
+          <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
+          <FixityValue>checksum0</FixityValue>
+        </Fixity>
+      </Fixities>
+    </Bitstream>
+    <ContentObject>
+      <Ref>9ecbba86-437f-42c6-aeba-e28b678bbf4c</Ref>
+      <Title>name1</Title>
+      <Parent>90730c77-8faa-4dbf-b20d-bba1046dac87</Parent>
+      <SecurityTag>open</SecurityTag>
+    </ContentObject>
+    <Generation original="true" active="true">
+      <ContentObject>9ecbba86-437f-42c6-aeba-e28b678bbf4c</ContentObject>
+      <Bitstreams>
+        <Bitstream>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1/9ecbba86-437f-42c6-aeba-e28b678bbf4c.ext1</Bitstream>
+      </Bitstreams>
+    </Generation>
+    <Bitstream>
+      <Filename>9ecbba86-437f-42c6-aeba-e28b678bbf4c.ext1</Filename>
+      <FileSize>1</FileSize>
+      <PhysicalLocation>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1</PhysicalLocation>
+      <Fixities>
+        <Fixity>
+          <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
             <FixityValue>checksum1</FixityValue>
           </Fixity>
         </Fixities>
       </Bitstream>
-    </Representation>
   </XIP>
 
   val asset: DynamoTable = DynamoTable(
@@ -106,6 +106,7 @@ class XMLCreatorTest extends AnyFlatSpec {
     Asset,
     "title",
     "description",
+    Option(1),
     Option(1),
     Option("checksum"),
     Option("ext")
@@ -120,6 +121,7 @@ class XMLCreatorTest extends AnyFlatSpec {
       Asset,
       s"title$suffix",
       s"description$suffix",
+      Option(suffix),
       Option(1),
       Option(s"checksum$suffix"),
       Option(s"ext$suffix")
@@ -133,6 +135,6 @@ class XMLCreatorTest extends AnyFlatSpec {
 
   "createXip" should "create the correct xip xml" in {
     val xml = XMLCreator().createXip(asset, children).unsafeRunSync()
-    prettyPrinter.format(expectedXipXml) should equal(xml)
+    prettyPrinter.format(expectedXipXml) + "\n" should equal(xml)
   }
 }
