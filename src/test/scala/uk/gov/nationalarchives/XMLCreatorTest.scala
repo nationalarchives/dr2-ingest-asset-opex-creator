@@ -3,7 +3,7 @@ package uk.gov.nationalarchives
 import cats.effect.unsafe.implicits.global
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
-import uk.gov.nationalarchives.Lambda.{Asset, DynamoTable}
+import uk.gov.nationalarchives.DynamoFormatters._
 
 import java.util.UUID
 import scala.xml.{Elem, PrettyPrinter}
@@ -12,6 +12,34 @@ class XMLCreatorTest extends AnyFlatSpec {
 
   private val prettyPrinter = new PrettyPrinter(200, 2)
   val expectedOpexXml: Elem = <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.0">
+    <opex:Transfer>
+      <opex:Manifest>
+        <opex:Folders>
+          <opex:Folder>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1</opex:Folder>
+          <opex:Folder>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02</opex:Folder>
+          <opex:Folder>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1</opex:Folder>
+          <opex:Folder>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c</opex:Folder>
+          <opex:Folder>Representation_Preservation</opex:Folder>
+        </opex:Folders>
+        <opex:Files>
+          <opex:File type="metadata" size="4">90730c77-8faa-4dbf-b20d-bba1046dac87.xip</opex:File>
+          <opex:File type="content" size="1">Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1/a814ee41-89f4-4975-8f92-303553fe9a02.ext0</opex:File>
+          <opex:File type="content" size="1">Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1/9ecbba86-437f-42c6-aeba-e28b678bbf4c.ext1</opex:File>
+        </opex:Files>
+      </opex:Manifest>
+    </opex:Transfer>
+    <opex:Properties>
+      <opex:Title>title</opex:Title>
+      <opex:Description>description</opex:Description>
+      <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
+      <Identifiers>
+        <Identifier type="Test1">Value1</Identifier>
+        <Identifier type="Test2">Value2</Identifier>
+      </Identifiers>
+    </opex:Properties>
+  </opex:OPEXMetadata>
+
+  val expectedOpexXmlWithoutIdentifiers: Elem = <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.0">
     <opex:Transfer>
       <opex:Manifest>
         <opex:Folders>
@@ -101,11 +129,11 @@ class XMLCreatorTest extends AnyFlatSpec {
   val asset: DynamoTable = DynamoTable(
     "TEST-ID",
     UUID.fromString("90730c77-8faa-4dbf-b20d-bba1046dac87"),
-    "parentPath",
+    Option("parentPath"),
     "name",
     Asset,
-    "title",
-    "description",
+    Option("title"),
+    Option("description"),
     Option(1),
     Option(1),
     Option("checksum"),
@@ -116,11 +144,11 @@ class XMLCreatorTest extends AnyFlatSpec {
     DynamoTable(
       "TEST-ID",
       uuid,
-      s"parentPath$suffix",
+      Option(s"parentPath$suffix"),
       s"name$suffix",
       Asset,
-      s"title$suffix",
-      s"description$suffix",
+      Option(s"title$suffix"),
+      Option(s"description$suffix"),
       Option(suffix),
       Option(1),
       Option(s"checksum$suffix"),
@@ -128,9 +156,15 @@ class XMLCreatorTest extends AnyFlatSpec {
     )
   }
 
-  "createOpex" should "create the correct opex xml" in {
-    val xml = XMLCreator().createOpex(asset, children, 4).unsafeRunSync()
+  "createOpex" should "create the correct opex xml with identifiers" in {
+    val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"))
+    val xml = XMLCreator().createOpex(asset, children, 4, identifiers).unsafeRunSync()
     prettyPrinter.format(expectedOpexXml) should equal(xml)
+  }
+
+  "createOpex" should "create the correct opex xml without identifiers" in {
+    val xml = XMLCreator().createOpex(asset, children, 4, Nil).unsafeRunSync()
+    prettyPrinter.format(expectedOpexXmlWithoutIdentifiers) should equal(xml)
   }
 
   "createXip" should "create the correct xip xml" in {

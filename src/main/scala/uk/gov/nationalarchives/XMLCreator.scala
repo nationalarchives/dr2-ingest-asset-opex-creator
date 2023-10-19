@@ -1,7 +1,7 @@
 package uk.gov.nationalarchives
 
 import cats.effect.IO
-import uk.gov.nationalarchives.Lambda.DynamoTable
+import uk.gov.nationalarchives.DynamoFormatters._
 
 import scala.xml._
 
@@ -29,6 +29,7 @@ class XMLCreator {
       asset: DynamoTable,
       children: List[DynamoTable],
       assetXipSize: Long,
+      identifiers: List[Identifier],
       securityDescriptor: String = "open"
   ): IO[String] = IO {
     val xml =
@@ -51,9 +52,16 @@ class XMLCreator {
           </opex:Manifest>
         </opex:Transfer>
         <opex:Properties>
-          <opex:Title>{if (asset.title.isBlank) asset.name else asset.title}</opex:Title>
-          <opex:Description>{asset.description}</opex:Description>
+          <opex:Title>{asset.title.getOrElse(asset.name)}</opex:Title>
+          <opex:Description>{asset.description.getOrElse("")}</opex:Description>
           <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
+          {
+        if (identifiers.nonEmpty) {
+          <Identifiers>
+            {identifiers.map(identifier => <Identifier type={identifier.identifierName}>{identifier.value}</Identifier>)}
+          </Identifiers>
+        }
+      }
         </opex:Properties>
       </opex:OPEXMetadata>
     prettyPrinter.format(xml)
@@ -95,7 +103,7 @@ class XMLCreator {
             <Fixities>
               <Fixity>
                 <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
-                <FixityValue>{child.checksum_sha256.getOrElse("")}</FixityValue>
+                <FixityValue>{child.checksumSha256.getOrElse("")}</FixityValue>
               </Fixity>
             </Fixities>
           </Bitstream>
