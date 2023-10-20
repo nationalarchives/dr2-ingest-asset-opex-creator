@@ -267,13 +267,13 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     ex.getMessage should equal(s"No children found for $assetId and $batchId")
   }
 
-  "handleRequest" should "return an error if the dynamo entry does not have a type of 'asset'" in {
+  "handleRequest" should "return an error if the dynamo entry does not have a type of 'Asset'" in {
     stubGetRequest(dynamoGetResponse.replace("Asset", "ArchiveFolder"))
     stubQueryRequest(emptyDynamoQueryResponse)
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
-    ex.getMessage should equal(s"Object $assetId is of type ArchiveFolder and not 'asset'")
+    ex.getMessage should equal(s"Object $assetId is of type ArchiveFolder and not 'Asset'")
   }
 
   "handleRequest" should "pass the correct id to dynamo getItem" in {
@@ -350,7 +350,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     contentObjects.last.text should equal(childIdJson.toString)
   }
 
-  "handleRequest" should "write the opex file to s3" in {
+  "handleRequest" should "upload the correct opex file to s3" in {
     stubGetRequest(dynamoGetResponse)
     stubQueryRequest(dynamoQueryResponse)
     val (_, opexPath) = stubPutRequest()
@@ -360,8 +360,8 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
     TestLambda().handleRequest(standardInput, outputStream, null)
 
-    val s3CopyRequests = s3Server.getAllServeEvents.asScala
-    val opexString = s3CopyRequests.filter(_.getRequest.getUrl == opexPath).head.getRequest.getBodyAsString.split("\n").tail.dropRight(3).mkString("\n")
+    val s3UploadRequests = s3Server.getAllServeEvents.asScala
+    val opexString = s3UploadRequests.filter(_.getRequest.getUrl == opexPath).head.getRequest.getBodyAsString.split("\n").tail.dropRight(3).mkString("\n")
     val opexXml = XML.loadString(opexString)
     prettyPrinter.format(opexXml) should equal(prettyPrinter.format(expectedOpex))
   }

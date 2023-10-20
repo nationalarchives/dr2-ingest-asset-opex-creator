@@ -34,7 +34,7 @@ class Lambda extends RequestStreamHandler {
       asset <- IO.fromOption(assetItems.headOption)(
         new Exception(s"No asset found for ${input.id} and ${input.batchId}")
       )
-      _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'asset'")) else IO.unit
+      _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'Asset'")) else IO.unit
       children <- childrenOfAsset(asset, config.dynamoTableName, config.dynamoGsiName)
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
       _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child)).sequence
