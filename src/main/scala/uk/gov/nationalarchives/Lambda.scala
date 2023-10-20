@@ -4,17 +4,16 @@ import cats.effect.unsafe.implicits.global
 import cats.effect._
 import cats.implicits._
 import com.amazonaws.services.lambda.runtime.{Context, RequestStreamHandler}
-import org.scanamo.generic.auto._
 import org.scanamo.syntax._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 import uk.gov.nationalarchives.DADynamoDBClient._
+import uk.gov.nationalarchives.DynamoFormatters._
 import uk.gov.nationalarchives.Lambda._
 import upickle.default._
 import fs2.Stream
 import fs2.interop.reactivestreams.StreamOps
-import org.scanamo.{DynamoFormat, TypeCoercionError}
 import software.amazon.awssdk.transfer.s3.model.CompletedUpload
 
 import java.io.{InputStream, OutputStream}
@@ -26,16 +25,6 @@ class Lambda extends RequestStreamHandler {
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
 
-  implicit val typeFormat: Typeclass[Type] = DynamoFormat.xmap[Type, String](
-    {
-      case "Folder"   => Right(Folder)
-      case "Asset"    => Right(Asset)
-      case "File"     => Right(File)
-      case typeString => Left(TypeCoercionError(new Exception(s"Type $typeString not found")))
-    },
-    typeObject => typeObject.toString
-  )
-
   override def handleRequest(inputStream: InputStream, outputStream: OutputStream, context: Context): Unit = {
     val inputString = inputStream.readAllBytes().map(_.toChar).mkString
     val input = read[Input](inputString)
@@ -45,13 +34,13 @@ class Lambda extends RequestStreamHandler {
       asset <- IO.fromOption(assetItems.headOption)(
         new Exception(s"No asset found for ${input.id} and ${input.batchId}")
       )
-      _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'asset'")) else IO.unit
+      _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'Asset'")) else IO.unit
       children <- childrenOfAsset(asset, config.dynamoTableName, config.dynamoGsiName)
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
       _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child)).sequence
       xip <- xmlCreator.createXip(asset, children.sortBy(_.sortOrder.getOrElse(Int.MaxValue)))
       _ <- uploadXMLToS3(xip, config.destinationBucket, s"${assetPath(input, asset)}/${asset.id}.xip")
-      opex <- xmlCreator.createOpex(asset, children, xip.getBytes.length)
+      opex <- xmlCreator.createOpex(asset, children, xip.getBytes.length, asset.identifiers)
       _ <- uploadXMLToS3(opex, config.destinationBucket, s"${parentPath(input, asset)}/${asset.id}.pax.opex")
     } yield ()
   }.unsafeRunSync()
@@ -70,7 +59,7 @@ class Lambda extends RequestStreamHandler {
     )
   }
 
-  private def parentPath(input: Input, asset: DynamoTable) = s"opex/${input.executionName}/${asset.parentPath}"
+  private def parentPath(input: Input, asset: DynamoTable) = s"opex/${input.executionName}${asset.parentPath.map(path => s"/$path").getOrElse("")}"
 
   private def assetPath(input: Input, asset: DynamoTable) = s"${parentPath(input, asset)}/${asset.id}.pax"
 
@@ -78,7 +67,7 @@ class Lambda extends RequestStreamHandler {
     s"${assetPath(input, asset)}/${xmlCreator.bitstreamPath(child)}/${xmlCreator.childFileName(child)}"
 
   private def childrenOfAsset(asset: DynamoTable, tableName: String, gsiName: String): IO[List[DynamoTable]] = {
-    val childrenParentPath = s"${asset.parentPath}/${asset.id}"
+    val childrenParentPath = s"${asset.parentPath.map(path => s"$path/").getOrElse("")}${asset.id}"
     dynamoClient
       .queryItems[DynamoTable](tableName, gsiName, "batchId" === asset.batchId and "parentPath" === childrenParentPath)
   }
@@ -90,34 +79,4 @@ object Lambda {
   case class Input(id: UUID, batchId: String, executionName: String, sourceBucket: String)
 
   private case class Config(dynamoTableName: String, dynamoGsiName: String, destinationBucket: String)
-
-  private case class PartitionKey(id: UUID)
-
-  sealed trait Type {
-    override def toString: String = this match {
-      case Folder => "Folder"
-      case Asset  => "Asset"
-      case File   => "File"
-    }
-  }
-
-  case object Folder extends Type
-
-  case object Asset extends Type
-
-  case object File extends Type
-
-  case class DynamoTable(
-      batchId: String,
-      id: UUID,
-      parentPath: String,
-      name: String,
-      `type`: Type,
-      title: String,
-      description: String,
-      sortOrder: Option[Int] = None,
-      fileSize: Option[Long] = None,
-      checksum_sha256: Option[String] = None,
-      fileExtension: Option[String] = None
-  )
 }

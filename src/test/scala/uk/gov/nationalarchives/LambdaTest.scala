@@ -16,7 +16,7 @@ import java.io.ByteArrayInputStream
 import java.net.URI
 import java.util.UUID
 import scala.jdk.CollectionConverters._
-import scala.xml.XML
+import scala.xml.{PrettyPrinter, XML}
 
 class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   val dynamoServer = new WireMockServer(9005)
@@ -93,6 +93,33 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
         .withRequestBody(matchingJsonPath("$.TableName", equalTo("test-table")))
         .willReturn(ok().withBody(queryResponse))
     )
+
+  private val expectedOpex = <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.0">
+    <opex:Transfer>
+      <opex:Manifest>
+        <opex:Folders>
+          <opex:Folder>Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793/Generation_1</opex:Folder>
+          <opex:Folder>Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793</opex:Folder>
+          <opex:Folder>Representation_Preservation/a25d33f3-7726-4fb3-8e6f-f66358451c4e</opex:Folder>
+          <opex:Folder>Representation_Preservation/a25d33f3-7726-4fb3-8e6f-f66358451c4e/Generation_1</opex:Folder>
+          <opex:Folder>Representation_Preservation</opex:Folder>
+        </opex:Folders>
+        <opex:Files>
+          <opex:File type="metadata" size="2443">68b1c80b-36b8-4f0f-94d6-92589002d87e.xip</opex:File>
+          <opex:File type="content" size="1">Representation_Preservation/a25d33f3-7726-4fb3-8e6f-f66358451c4e/Generation_1/a25d33f3-7726-4fb3-8e6f-f66358451c4e.docx</opex:File>
+          <opex:File type="content" size="2">Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793/Generation_1/feedd76d-e368-45c8-96e3-c37671476793.json</opex:File>
+        </opex:Files>
+      </opex:Manifest>
+    </opex:Transfer>
+    <opex:Properties>
+      <opex:Title>Test Name</opex:Title>
+      <opex:Description/>
+      <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
+      <Identifiers>
+        <Identifier type="Code">Code</Identifier>
+      </Identifiers>
+    </opex:Properties>
+  </opex:OPEXMetadata>
 
   val assetId: UUID = UUID.fromString("68b1c80b-36b8-4f0f-94d6-92589002d87e")
   val assetParentPath: String = "a/parent/path"
@@ -192,6 +219,9 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
        |        },
        |        "batchId": {
        |          "S": "$batchId"
+       |        },
+       |        "id_Code": {
+       |          "S": "Code"
        |        }
        |      }
        |    ]
@@ -237,13 +267,13 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     ex.getMessage should equal(s"No children found for $assetId and $batchId")
   }
 
-  "handleRequest" should "return an error if the dynamo entry does not have a type of 'asset'" in {
-    stubGetRequest(dynamoGetResponse.replace("Asset", "Folder"))
+  "handleRequest" should "return an error if the dynamo entry does not have a type of 'Asset'" in {
+    stubGetRequest(dynamoGetResponse.replace("Asset", "ArchiveFolder"))
     stubQueryRequest(emptyDynamoQueryResponse)
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
-    ex.getMessage should equal(s"Object $assetId is of type Folder and not 'asset'")
+    ex.getMessage should equal(s"Object $assetId is of type ArchiveFolder and not 'Asset'")
   }
 
   "handleRequest" should "pass the correct id to dynamo getItem" in {
@@ -318,6 +348,22 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     val contentObjects = XML.loadString(xipString) \ "Representation" \ "ContentObjects" \ "ContentObject"
     contentObjects.head.text should equal(childIdDocx.toString)
     contentObjects.last.text should equal(childIdJson.toString)
+  }
+
+  "handleRequest" should "upload the correct opex file to s3" in {
+    stubGetRequest(dynamoGetResponse)
+    stubQueryRequest(dynamoQueryResponse)
+    val (_, opexPath) = stubPutRequest()
+    stubJsonCopyRequest()
+    stubDocxCopyRequest()
+    val prettyPrinter = new PrettyPrinter(180, 2)
+
+    TestLambda().handleRequest(standardInput, outputStream, null)
+
+    val s3UploadRequests = s3Server.getAllServeEvents.asScala
+    val opexString = s3UploadRequests.filter(_.getRequest.getUrl == opexPath).head.getRequest.getBodyAsString.split("\n").tail.dropRight(3).mkString("\n")
+    val opexXml = XML.loadString(opexString)
+    prettyPrinter.format(opexXml) should equal(prettyPrinter.format(expectedOpex))
   }
 
   "handleRequest" should "return an error if the Dynamo API is unavailable" in {
