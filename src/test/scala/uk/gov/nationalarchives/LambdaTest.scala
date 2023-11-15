@@ -94,7 +94,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
         .willReturn(ok().withBody(queryResponse))
     )
 
-  private val expectedOpex = <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.0">
+  private val expectedOpex = <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.2">
     <opex:Transfer>
       <opex:Manifest>
         <opex:Folders>
