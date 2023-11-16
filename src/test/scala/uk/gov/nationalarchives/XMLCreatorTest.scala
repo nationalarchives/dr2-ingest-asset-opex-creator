@@ -11,9 +11,9 @@ import scala.xml.{Elem, PrettyPrinter}
 class XMLCreatorTest extends AnyFlatSpec {
 
   private val prettyPrinter = new PrettyPrinter(200, 2)
-  private val opexSchema = "http://www.openpreservationexchange.org/opex/v1.2"
+  private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
 
-  val expectedOpexXml: Elem = <opex:OPEXMetadata xmlns:opex={opexSchema}>
+  val expectedOpexXml: Elem = <opex:OPEXMetadata xmlns:opex={opexNamespace}>
     <opex:Transfer>
       <opex:Manifest>
         <opex:Folders>
@@ -41,7 +41,7 @@ class XMLCreatorTest extends AnyFlatSpec {
     </opex:Properties>
   </opex:OPEXMetadata>
 
-  val expectedOpexXmlWithoutIdentifiers: Elem = <opex:OPEXMetadata xmlns:opex={opexSchema}>
+  val expectedOpexXmlWithoutIdentifiers: Elem = <opex:OPEXMetadata xmlns:opex={opexNamespace}>
     <opex:Transfer>
       <opex:Manifest>
         <opex:Folders>
