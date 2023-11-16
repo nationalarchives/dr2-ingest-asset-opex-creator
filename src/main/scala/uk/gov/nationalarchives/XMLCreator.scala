@@ -7,6 +7,7 @@ import scala.xml._
 
 class XMLCreator {
   private val prettyPrinter = new PrettyPrinter(200, 2)
+  private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
   private[nationalarchives] def bitstreamPath(child: DynamoTable) =
     s"Representation_Preservation/${child.id}/Generation_1"
 
@@ -33,7 +34,7 @@ class XMLCreator {
       securityDescriptor: String = "open"
   ): IO[String] = IO {
     val xml =
-      <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.0">
+      <opex:OPEXMetadata xmlns:opex={opexNamespace}>
         <opex:Transfer>
           <opex:Manifest>
             <opex:Folders>
