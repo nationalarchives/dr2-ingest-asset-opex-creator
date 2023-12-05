@@ -173,7 +173,7 @@ class XMLCreatorTest extends AnyFlatSpec {
   "createOpex" should "create the correct opex xml with identifiers" in {
     val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"), Identifier("UpstreamSystemReference", "testSystemRef2"))
     val xml = XMLCreator(() => ingestDateTime).createOpex(asset, children, 4, identifiers).unsafeRunSync()
-    prettyPrinter.format(expectedOpexXml) should equal(xml)
+    xml should equal(prettyPrinter.format(expectedOpexXml))
   }
 
   "createOpex" should "throw a 'NoSuchElementException' if the identifiers the opex need are missing" in {
@@ -185,6 +185,6 @@ class XMLCreatorTest extends AnyFlatSpec {
 
   "createXip" should "create the correct xip xml" in {
     val xml = XMLCreator(() => ingestDateTime).createXip(asset, children).unsafeRunSync()
-    prettyPrinter.format(expectedXipXml) + "\n" should equal(xml)
+    xml should equal(prettyPrinter.format(expectedXipXml) + "\n")
   }
 }

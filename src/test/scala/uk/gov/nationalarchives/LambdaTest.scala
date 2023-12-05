@@ -396,7 +396,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     val expectedRequestBody =
       """{"TableName":"test-table","IndexName":"test-gsi","KeyConditionExpression":"#A = :batchId AND #B = :parentPath",""" +
         s""""ExpressionAttributeNames":{"#A":"batchId","#B":"parentPath"},"ExpressionAttributeValues":{":batchId":{"S":"TEST-ID"},":parentPath":{"S":"$assetParentPath/$assetId"}}}"""
-    expectedRequestBody should equal(requestBody)
+    requestBody should equal(expectedRequestBody)
   }
 
   "handleRequest" should "copy the correct child assets from source to destination" in {
