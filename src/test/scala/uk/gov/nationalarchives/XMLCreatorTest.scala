@@ -5,6 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 import uk.gov.nationalarchives.DynamoFormatters._
 
+import java.time.OffsetDateTime
 import java.util.UUID
 import scala.xml.{Elem, PrettyPrinter}
 
@@ -12,8 +13,26 @@ class XMLCreatorTest extends AnyFlatSpec {
 
   private val prettyPrinter = new PrettyPrinter(200, 2)
   private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
+  private val ingestDateTime = OffsetDateTime.parse("2023-12-04T10:55:44.848622Z")
 
   val expectedOpexXml: Elem = <opex:OPEXMetadata xmlns:opex={opexNamespace}>
+    <DescriptiveMetadata>
+      <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+        <DigitalAssetSource>digitalAssetSource</DigitalAssetSource>
+        <DigitalAssetSubtype>digitalAssetSubtype</DigitalAssetSubtype>
+        <IngestDateTime>{ingestDateTime}</IngestDateTime>
+        <OriginalFiles>
+          <File>dec2b921-20e3-41e8-a299-f3cbc13131a2</File>
+        </OriginalFiles>
+        <OriginalMetadataFiles>
+          <File>3f42e3f2-fffe-4fe9-87f7-262e95b86d75</File>
+        </OriginalMetadataFiles>
+        <TransferDateTime>2023-06-01T00:00Z</TransferDateTime>
+        <TransferringBody>transferringBody</TransferringBody>
+        <UpstreamSystem>upstreamSystem</UpstreamSystem>
+        <UpstreamSystemRef>testSystemRef2</UpstreamSystemRef>
+      </Source>
+    </DescriptiveMetadata>
     <opex:Transfer>
       <opex:Manifest>
         <opex:Folders>
@@ -37,31 +56,8 @@ class XMLCreatorTest extends AnyFlatSpec {
       <Identifiers>
         <Identifier type="Test1">Value1</Identifier>
         <Identifier type="Test2">Value2</Identifier>
+        <Identifier type="UpstreamSystemReference">testSystemRef2</Identifier>
       </Identifiers>
-    </opex:Properties>
-  </opex:OPEXMetadata>
-
-  val expectedOpexXmlWithoutIdentifiers: Elem = <opex:OPEXMetadata xmlns:opex={opexNamespace}>
-    <opex:Transfer>
-      <opex:Manifest>
-        <opex:Folders>
-          <opex:Folder>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1</opex:Folder>
-          <opex:Folder>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02</opex:Folder>
-          <opex:Folder>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1</opex:Folder>
-          <opex:Folder>Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c</opex:Folder>
-          <opex:Folder>Representation_Preservation</opex:Folder>
-        </opex:Folders>
-        <opex:Files>
-          <opex:File type="metadata" size="4">90730c77-8faa-4dbf-b20d-bba1046dac87.xip</opex:File>
-          <opex:File type="content" size="1">Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1/a814ee41-89f4-4975-8f92-303553fe9a02.ext0</opex:File>
-          <opex:File type="content" size="1">Representation_Preservation/9ecbba86-437f-42c6-aeba-e28b678bbf4c/Generation_1/9ecbba86-437f-42c6-aeba-e28b678bbf4c.ext1</opex:File>
-        </opex:Files>
-      </opex:Manifest>
-    </opex:Transfer>
-    <opex:Properties>
-      <opex:Title>title</opex:Title>
-      <opex:Description>description</opex:Description>
-      <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
     </opex:Properties>
   </opex:OPEXMetadata>
 
@@ -134,12 +130,20 @@ class XMLCreatorTest extends AnyFlatSpec {
     Option("parentPath"),
     "name",
     Asset,
+    "transferringBody",
+    OffsetDateTime.parse("2023-06-01T00:00Z"),
+    "upstreamSystem",
+    "digitalAssetSource",
+    "digitalAssetSubtype",
+    List(UUID.fromString("dec2b921-20e3-41e8-a299-f3cbc13131a2")),
+    List(UUID.fromString("3f42e3f2-fffe-4fe9-87f7-262e95b86d75")),
     Option("title"),
     Option("description"),
     Option(1),
     Option(1),
     Option("checksum"),
-    Option("ext")
+    Option("ext"),
+    List(Identifier("Test2", "testIdentifier2"), Identifier("Test", "testIdentifier"), Identifier("UpstreamSystemReference", "testSystemRef"))
   )
   val uuids: List[UUID] = List(UUID.fromString("a814ee41-89f4-4975-8f92-303553fe9a02"), UUID.fromString("9ecbba86-437f-42c6-aeba-e28b678bbf4c"))
   val children: List[DynamoTable] = uuids.zipWithIndex.map { case (uuid, suffix) =>
@@ -149,28 +153,38 @@ class XMLCreatorTest extends AnyFlatSpec {
       Option(s"parentPath$suffix"),
       s"name$suffix",
       Asset,
+      s"transferringBody$suffix",
+      OffsetDateTime.parse("2023-09-01T00:00Z"),
+      s"upstreamSystem$suffix",
+      s"digitalAssetSource$suffix",
+      s"digitalAssetSubtype$suffix",
+      List(UUID.fromString("4c338507-682f-42b6-b7a4-fba00195c660")),
+      List(UUID.fromString("34b0ff5a-c06e-4ebb-99d2-6064b4912aca")),
       Option(s"title$suffix"),
       Option(s"description$suffix"),
       Option(suffix),
       Option(1),
       Option(s"checksum$suffix"),
-      Option(s"ext$suffix")
+      Option(s"ext$suffix"),
+      List(Identifier("Test2", "testIdentifier4"), Identifier("Test", "testIdentifier3"), Identifier("UpstreamSystemReference", "testSystemRef2"))
     )
   }
 
   "createOpex" should "create the correct opex xml with identifiers" in {
-    val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"))
-    val xml = XMLCreator().createOpex(asset, children, 4, identifiers).unsafeRunSync()
+    val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"), Identifier("UpstreamSystemReference", "testSystemRef2"))
+    val xml = XMLCreator(() => ingestDateTime).createOpex(asset, children, 4, identifiers).unsafeRunSync()
     prettyPrinter.format(expectedOpexXml) should equal(xml)
   }
 
-  "createOpex" should "create the correct opex xml without identifiers" in {
-    val xml = XMLCreator().createOpex(asset, children, 4, Nil).unsafeRunSync()
-    prettyPrinter.format(expectedOpexXmlWithoutIdentifiers) should equal(xml)
+  "createOpex" should "throw a 'NoSuchElementException' if the identifiers the opex need are missing" in {
+    val ex = intercept[NoSuchElementException] {
+      XMLCreator(() => ingestDateTime).createOpex(asset, children, 4, Nil).unsafeRunSync()
+    }
+    ex.getMessage should equal("None.get")
   }
 
   "createXip" should "create the correct xip xml" in {
-    val xml = XMLCreator().createXip(asset, children).unsafeRunSync()
+    val xml = XMLCreator(() => ingestDateTime).createXip(asset, children).unsafeRunSync()
     prettyPrinter.format(expectedXipXml) + "\n" should equal(xml)
   }
 }
