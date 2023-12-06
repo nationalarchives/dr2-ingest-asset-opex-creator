@@ -134,5 +134,5 @@ class XMLCreator(ingestDateTime: () => OffsetDateTime) {
 }
 object XMLCreator {
   // When we can get actual ingest DateTime, we'll retrieve it from the dynamoTable instead
-  def apply(ingestDateTime: () => OffsetDateTime = () => OffsetDateTime.now()): XMLCreator = new XMLCreator(ingestDateTime)
+  def apply(ingestDateTime: () => OffsetDateTime): XMLCreator = new XMLCreator(ingestDateTime)
 }
