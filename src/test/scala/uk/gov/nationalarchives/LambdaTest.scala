@@ -345,7 +345,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       .build()
     override val dynamoClient: DADynamoDBClient[IO] = new DADynamoDBClient[IO](asyncDynamoClient)
     override val s3Client: DAS3Client[IO] = DAS3Client[IO](asyncS3Client)
-    override val ingestDateTime: () => OffsetDateTime = () => OffsetDateTime.parse("2023-09-01T00:00Z")
+    override val ingestDateTime: OffsetDateTime = OffsetDateTime.parse("2023-09-01T00:00Z")
   }
 
   "handleRequest" should "return an error if the asset is not found in dynamo" in {

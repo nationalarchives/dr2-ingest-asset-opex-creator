@@ -6,7 +6,7 @@ import uk.gov.nationalarchives.DynamoFormatters._
 import java.time.OffsetDateTime
 import scala.xml._
 
-class XMLCreator(ingestDateTime: () => OffsetDateTime) {
+class XMLCreator(ingestDateTime: OffsetDateTime) {
   private val prettyPrinter = new PrettyPrinter(200, 2)
   private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
   private[nationalarchives] def bitstreamPath(child: DynamoTable) =
@@ -40,7 +40,7 @@ class XMLCreator(ingestDateTime: () => OffsetDateTime) {
           <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
             <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
             <DigitalAssetSubtype>{asset.digitalAssetSubtype}</DigitalAssetSubtype>
-            <IngestDateTime>{ingestDateTime()}</IngestDateTime>
+            <IngestDateTime>{ingestDateTime}</IngestDateTime>
             <OriginalFiles>
               {asset.originalFiles.map(originalFile => <File>{originalFile}</File>)}
             </OriginalFiles>
@@ -134,5 +134,5 @@ class XMLCreator(ingestDateTime: () => OffsetDateTime) {
 }
 object XMLCreator {
   // When we can get actual ingest DateTime, we'll retrieve it from the dynamoTable instead
-  def apply(ingestDateTime: () => OffsetDateTime): XMLCreator = new XMLCreator(ingestDateTime)
+  def apply(ingestDateTime: OffsetDateTime): XMLCreator = new XMLCreator(ingestDateTime)
 }

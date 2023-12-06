@@ -22,7 +22,7 @@ import java.util.UUID
 
 class Lambda extends RequestStreamHandler {
 
-  val ingestDateTime: () => OffsetDateTime = () => OffsetDateTime.now()
+  val ingestDateTime: OffsetDateTime = OffsetDateTime.now()
   private lazy val xmlCreator: XMLCreator = XMLCreator(ingestDateTime)
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
