@@ -3,9 +3,10 @@ package uk.gov.nationalarchives
 import cats.effect.IO
 import uk.gov.nationalarchives.DynamoFormatters._
 
+import java.time.OffsetDateTime
 import scala.xml._
 
-class XMLCreator {
+class XMLCreator(ingestDateTime: OffsetDateTime) {
   private val prettyPrinter = new PrettyPrinter(200, 2)
   private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
   private[nationalarchives] def bitstreamPath(child: DynamoTable) =
@@ -35,6 +36,23 @@ class XMLCreator {
   ): IO[String] = IO {
     val xml =
       <opex:OPEXMetadata xmlns:opex={opexNamespace}>
+        <DescriptiveMetadata>
+          <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+            <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
+            <DigitalAssetSubtype>{asset.digitalAssetSubtype}</DigitalAssetSubtype>
+            <IngestDateTime>{ingestDateTime}</IngestDateTime>
+            <OriginalFiles>
+              {asset.originalFiles.map(originalFile => <File>{originalFile}</File>)}
+            </OriginalFiles>
+            <OriginalMetadataFiles>
+              {asset.originalMetadataFiles.map(originalMetadataFile => <File>{originalMetadataFile}</File>)}
+            </OriginalMetadataFiles>
+            <TransferDateTime>{asset.transferCompleteDatetime}</TransferDateTime>
+            <TransferringBody>{asset.transferringBody}</TransferringBody>
+            <UpstreamSystem>{asset.upstreamSystem}</UpstreamSystem>
+            <UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</UpstreamSystemRef>
+          </Source>
+        </DescriptiveMetadata>
         <opex:Transfer>
           <opex:Manifest>
             <opex:Folders>
@@ -115,5 +133,6 @@ class XMLCreator {
   }
 }
 object XMLCreator {
-  def apply(): XMLCreator = new XMLCreator()
+  // When we can get actual ingest DateTime, we'll retrieve it from the dynamoTable instead
+  def apply(ingestDateTime: OffsetDateTime): XMLCreator = new XMLCreator(ingestDateTime)
 }

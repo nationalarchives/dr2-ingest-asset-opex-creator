@@ -17,11 +17,13 @@ import fs2.interop.reactivestreams.StreamOps
 import software.amazon.awssdk.transfer.s3.model.CompletedUpload
 
 import java.io.{InputStream, OutputStream}
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class Lambda extends RequestStreamHandler {
 
-  private val xmlCreator: XMLCreator = XMLCreator()
+  val ingestDateTime: OffsetDateTime = OffsetDateTime.now()
+  private lazy val xmlCreator: XMLCreator = XMLCreator(ingestDateTime)
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
 

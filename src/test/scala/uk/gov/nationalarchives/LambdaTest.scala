@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 
 import java.io.ByteArrayInputStream
 import java.net.URI
+import java.time.OffsetDateTime
 import java.util.UUID
 import scala.jdk.CollectionConverters._
 import scala.xml.{PrettyPrinter, XML}
@@ -87,14 +88,31 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
         .willReturn(ok().withBody(batchGetResponse))
     )
 
-  def stubQueryRequest(queryResponse: String): Unit =
+  def stubPostRequest(postResponse: String): Unit =
     dynamoServer.stubFor(
       post(urlEqualTo("/"))
         .withRequestBody(matchingJsonPath("$.TableName", equalTo("test-table")))
-        .willReturn(ok().withBody(queryResponse))
+        .willReturn(ok().withBody(postResponse))
     )
 
   private val expectedOpex = <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.2">
+    <DescriptiveMetadata>
+      <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+        <DigitalAssetSource>Test Digital Asset Source</DigitalAssetSource>
+        <DigitalAssetSubtype>Test Digital Asset Subtype</DigitalAssetSubtype>
+        <IngestDateTime>2023-09-01T00:00Z</IngestDateTime>
+        <OriginalFiles>
+          <File>b6102810-53e3-43a2-9f69-fafe71d4aa40</File>
+        </OriginalFiles>
+        <OriginalMetadataFiles>
+          <File>c019df6a-fccd-4f81-86d8-085489fc71db</File>
+        </OriginalMetadataFiles>
+        <TransferDateTime>2023-08-01T00:00Z</TransferDateTime>
+        <TransferringBody>Test Transferring Body</TransferringBody>
+        <UpstreamSystem>Test Upstream System</UpstreamSystem>
+        <UpstreamSystemRef>UpstreamSystemReference</UpstreamSystemRef>
+      </Source>
+    </DescriptiveMetadata>
     <opex:Transfer>
       <opex:Manifest>
         <opex:Folders>
@@ -116,6 +134,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       <opex:Description/>
       <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
       <Identifiers>
+        <Identifier type="UpstreamSystemReference">UpstreamSystemReference</Identifier>
         <Identifier type="Code">Code</Identifier>
       </Identifiers>
     </opex:Properties>
@@ -134,8 +153,8 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   def outputStream: ByteArrayOutputStream = new ByteArrayOutputStream()
 
   val emptyDynamoGetResponse: String = """{"Responses": {"test-table": []}}"""
-  val emptyDynamoQueryResponse: String = """{"Count": 0, "Items": []}"""
-  val dynamoQueryResponse: String =
+  val emptyDynamoPostResponse: String = """{"Count": 0, "Items": []}"""
+  val dynamoPostResponse: String =
     s"""{
       |  "Count": 2,
       |  "Items": [
@@ -166,6 +185,33 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       |      },
       |      "batchId": {
       |        "S": "$batchId"
+      |      },
+      |      "transferringBody": {
+      |        "S": "Test Transferring Body"
+      |      },
+      |      "transferCompleteDatetime": {
+      |        "S": "2023-09-01T00:00Z"
+      |      },
+      |      "upstreamSystem": {
+      |        "S": "Test Upstream System"
+      |      },
+      |      "digitalAssetSource": {
+      |        "S": "Test Digital Asset Source"
+      |      },
+      |      "digitalAssetSubtype": {
+      |        "S": "Test Digital Asset Subtype"
+      |      },
+      |      "originalFiles": {
+      |        "L": [ { "S" : "b6102810-53e3-43a2-9f69-fafe71d4aa40" } ]
+      |      },
+      |      "originalMetadataFiles": {
+      |        "L": [ { "S" : "c019df6a-fccd-4f81-86d8-085489fc71db" } ]
+      |      },
+      |      "id_Code": {
+      |          "S": "Code"
+      |      },
+      |      "id_UpstreamSystemReference": {
+      |        "S": "UpstreamSystemReference"
       |      }
       |    },
       |    {
@@ -195,6 +241,33 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       |      },
       |      "batchId": {
       |        "S": "$batchId"
+      |      },
+      |      "transferringBody": {
+      |        "S": "Test Transferring Body"
+      |      },
+      |      "transferCompleteDatetime": {
+      |        "S": "2023-09-01T00:00Z"
+      |      },
+      |      "upstreamSystem": {
+      |        "S": "Test Upstream System"
+      |      },
+      |      "digitalAssetSource": {
+      |        "S": "Test Digital Asset Source"
+      |      },
+      |      "digitalAssetSubtype": {
+      |        "S": "Test Digital Asset Subtype"
+      |      },
+      |      "originalFiles": {
+      |        "L": [ { "S" : "b6102810-53e3-43a2-9f69-fafe71d4aa40" } ]
+      |      },
+      |      "originalMetadataFiles": {
+      |        "L": [ { "S" : "c019df6a-fccd-4f81-86d8-085489fc71db" } ]
+      |      },
+      |      "id_Code": {
+      |          "S": "Code"
+      |      },
+      |      "id_UpstreamSystemReference": {
+      |        "S": "UpstreamSystemReference"
       |      }
       |    }
       |  ]
@@ -220,8 +293,32 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
        |        "batchId": {
        |          "S": "$batchId"
        |        },
+       |        "transferringBody": {
+       |          "S": "Test Transferring Body"
+       |        },
+       |        "transferCompleteDatetime": {
+       |          "S": "2023-08-01T00:00Z"
+       |        },
+       |        "upstreamSystem": {
+       |          "S": "Test Upstream System"
+       |        },
+       |        "digitalAssetSource": {
+       |          "S": "Test Digital Asset Source"
+       |        },
+       |        "digitalAssetSubtype": {
+       |          "S": "Test Digital Asset Subtype"
+       |        },
+       |        "originalFiles": {
+       |          "L": [ { "S" : "b6102810-53e3-43a2-9f69-fafe71d4aa40" } ]
+       |        },
+       |        "originalMetadataFiles": {
+       |          "L": [ { "S" : "c019df6a-fccd-4f81-86d8-085489fc71db" } ]
+       |        },
        |        "id_Code": {
        |          "S": "Code"
+       |        },
+       |        "id_UpstreamSystemReference": {
+       |          "S": "UpstreamSystemReference"
        |        }
        |      }
        |    ]
@@ -248,6 +345,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       .build()
     override val dynamoClient: DADynamoDBClient[IO] = new DADynamoDBClient[IO](asyncDynamoClient)
     override val s3Client: DAS3Client[IO] = DAS3Client[IO](asyncS3Client)
+    override val ingestDateTime: OffsetDateTime = OffsetDateTime.parse("2023-09-01T00:00Z")
   }
 
   "handleRequest" should "return an error if the asset is not found in dynamo" in {
@@ -260,7 +358,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "return an error if no children are found for the asset" in {
     stubGetRequest(dynamoGetResponse)
-    stubQueryRequest(emptyDynamoQueryResponse)
+    stubPostRequest(emptyDynamoPostResponse)
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
@@ -268,8 +366,8 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   }
 
   "handleRequest" should "return an error if the dynamo entry does not have a type of 'Asset'" in {
-    stubGetRequest(dynamoGetResponse.replace("Asset", "ArchiveFolder"))
-    stubQueryRequest(emptyDynamoQueryResponse)
+    stubGetRequest(dynamoGetResponse.replace(""""S": "Asset"""", """"S": "ArchiveFolder""""))
+    stubPostRequest(emptyDynamoPostResponse)
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
@@ -288,7 +386,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "pass the correct parameters to dynamo for the query request" in {
     stubGetRequest(dynamoGetResponse)
-    stubQueryRequest(emptyDynamoQueryResponse)
+    stubPostRequest(emptyDynamoPostResponse)
     intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
@@ -298,12 +396,12 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     val expectedRequestBody =
       """{"TableName":"test-table","IndexName":"test-gsi","KeyConditionExpression":"#A = :batchId AND #B = :parentPath",""" +
         s""""ExpressionAttributeNames":{"#A":"batchId","#B":"parentPath"},"ExpressionAttributeValues":{":batchId":{"S":"TEST-ID"},":parentPath":{"S":"$assetParentPath/$assetId"}}}"""
-    expectedRequestBody should equal(requestBody)
+    requestBody should equal(expectedRequestBody)
   }
 
   "handleRequest" should "copy the correct child assets from source to destination" in {
     stubGetRequest(dynamoGetResponse)
-    stubQueryRequest(dynamoQueryResponse)
+    stubPostRequest(dynamoPostResponse)
     val (sourceJson, destinationJson) = stubJsonCopyRequest()
     val (sourceDocx, destinationDocx) = stubDocxCopyRequest()
     stubPutRequest()
@@ -322,7 +420,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "upload the xip and opex files" in {
     stubGetRequest(dynamoGetResponse)
-    stubQueryRequest(dynamoQueryResponse)
+    stubPostRequest(dynamoPostResponse)
     val (xipPath, opexPath) = stubPutRequest()
     stubJsonCopyRequest()
     stubDocxCopyRequest()
@@ -336,7 +434,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "write the xip content objects in the correct order" in {
     stubGetRequest(dynamoGetResponse)
-    stubQueryRequest(dynamoQueryResponse)
+    stubPostRequest(dynamoPostResponse)
     val (xipPath, _) = stubPutRequest()
     stubJsonCopyRequest()
     stubDocxCopyRequest()
@@ -352,7 +450,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
 
   "handleRequest" should "upload the correct opex file to s3" in {
     stubGetRequest(dynamoGetResponse)
-    stubQueryRequest(dynamoQueryResponse)
+    stubPostRequest(dynamoPostResponse)
     val (_, opexPath) = stubPutRequest()
     stubJsonCopyRequest()
     stubDocxCopyRequest()
@@ -377,7 +475,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   "handleRequest" should "return an error if the S3 API is unavailable" in {
     s3Server.stop()
     stubGetRequest(dynamoGetResponse)
-    stubQueryRequest(dynamoQueryResponse)
+    stubPostRequest(dynamoPostResponse)
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
