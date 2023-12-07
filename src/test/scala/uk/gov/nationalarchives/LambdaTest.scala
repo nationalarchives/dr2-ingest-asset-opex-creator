@@ -96,23 +96,23 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     )
 
   private val expectedOpex = <opex:OPEXMetadata xmlns:opex="http://www.openpreservationexchange.org/opex/v1.2">
-    <DescriptiveMetadata>
-      <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
-        <DigitalAssetSource>Test Digital Asset Source</DigitalAssetSource>
-        <DigitalAssetSubtype>Test Digital Asset Subtype</DigitalAssetSubtype>
-        <IngestDateTime>2023-09-01T00:00Z</IngestDateTime>
-        <OriginalFiles>
-          <File>b6102810-53e3-43a2-9f69-fafe71d4aa40</File>
-        </OriginalFiles>
-        <OriginalMetadataFiles>
-          <File>c019df6a-fccd-4f81-86d8-085489fc71db</File>
-        </OriginalMetadataFiles>
-        <TransferDateTime>2023-08-01T00:00Z</TransferDateTime>
-        <TransferringBody>Test Transferring Body</TransferringBody>
-        <UpstreamSystem>Test Upstream System</UpstreamSystem>
-        <UpstreamSystemRef>UpstreamSystemReference</UpstreamSystemRef>
-      </Source>
-    </DescriptiveMetadata>
+    <opex:DescriptiveMetadata>
+      <opex:Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+        <opex:DigitalAssetSource>Test Digital Asset Source</opex:DigitalAssetSource>
+        <opex:DigitalAssetSubtype>Test Digital Asset Subtype</opex:DigitalAssetSubtype>
+        <opex:IngestDateTime>2023-09-01T00:00Z</opex:IngestDateTime>
+        <opex:OriginalFiles>
+          <opex:File>b6102810-53e3-43a2-9f69-fafe71d4aa40</opex:File>
+        </opex:OriginalFiles>
+        <opex:OriginalMetadataFiles>
+          <opex:File>c019df6a-fccd-4f81-86d8-085489fc71db</opex:File>
+        </opex:OriginalMetadataFiles>
+        <opex:TransferDateTime>2023-08-01T00:00Z</opex:TransferDateTime>
+        <opex:TransferringBody>Test Transferring Body</opex:TransferringBody>
+        <opex:UpstreamSystem>Test Upstream System</opex:UpstreamSystem>
+        <opex:UpstreamSystemRef>UpstreamSystemReference</opex:UpstreamSystemRef>
+      </opex:Source>
+    </opex:DescriptiveMetadata>
     <opex:Transfer>
       <opex:Manifest>
         <opex:Folders>
