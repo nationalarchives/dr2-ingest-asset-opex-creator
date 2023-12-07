@@ -133,10 +133,10 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       <opex:Title>Test Name</opex:Title>
       <opex:Description/>
       <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
-      <Identifiers>
-        <Identifier type="UpstreamSystemReference">UpstreamSystemReference</Identifier>
-        <Identifier type="Code">Code</Identifier>
-      </Identifiers>
+      <opex:Identifiers>
+        <opex:Identifier type="UpstreamSystemReference">UpstreamSystemReference</opex:Identifier>
+        <opex:Identifier type="Code">Code</opex:Identifier>
+      </opex:Identifiers>
     </opex:Properties>
   </opex:OPEXMetadata>
 

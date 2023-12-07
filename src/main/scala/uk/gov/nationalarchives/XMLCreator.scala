@@ -76,9 +76,9 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
           <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
           {
         if (identifiers.nonEmpty) {
-          <Identifiers>
-            {identifiers.map(identifier => <Identifier type={identifier.identifierName}>{identifier.value}</Identifier>)}
-          </Identifiers>
+          <opex:Identifiers>
+            {identifiers.map(identifier => <opex:Identifier type={identifier.identifierName}>{identifier.value}</opex:Identifier>)}
+          </opex:Identifiers>
         }
       }
         </opex:Properties>

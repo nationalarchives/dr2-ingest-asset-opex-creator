@@ -53,11 +53,11 @@ class XMLCreatorTest extends AnyFlatSpec {
       <opex:Title>title</opex:Title>
       <opex:Description>description</opex:Description>
       <opex:SecurityDescriptor>open</opex:SecurityDescriptor>
-      <Identifiers>
-        <Identifier type="Test1">Value1</Identifier>
-        <Identifier type="Test2">Value2</Identifier>
-        <Identifier type="UpstreamSystemReference">testSystemRef2</Identifier>
-      </Identifiers>
+      <opex:Identifiers>
+        <opex:Identifier type="Test1">Value1</opex:Identifier>
+        <opex:Identifier type="Test2">Value2</opex:Identifier>
+        <opex:Identifier type="UpstreamSystemReference">testSystemRef2</opex:Identifier>
+      </opex:Identifiers>
     </opex:Properties>
   </opex:OPEXMetadata>
 
