@@ -36,23 +36,23 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
   ): IO[String] = IO {
     val xml =
       <opex:OPEXMetadata xmlns:opex={opexNamespace}>
-        <DescriptiveMetadata>
-          <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
-            <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
-            <DigitalAssetSubtype>{asset.digitalAssetSubtype}</DigitalAssetSubtype>
-            <IngestDateTime>{ingestDateTime}</IngestDateTime>
-            <OriginalFiles>
-              {asset.originalFiles.map(originalFile => <File>{originalFile}</File>)}
-            </OriginalFiles>
-            <OriginalMetadataFiles>
-              {asset.originalMetadataFiles.map(originalMetadataFile => <File>{originalMetadataFile}</File>)}
-            </OriginalMetadataFiles>
-            <TransferDateTime>{asset.transferCompleteDatetime}</TransferDateTime>
-            <TransferringBody>{asset.transferringBody}</TransferringBody>
-            <UpstreamSystem>{asset.upstreamSystem}</UpstreamSystem>
-            <UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</UpstreamSystemRef>
-          </Source>
-        </DescriptiveMetadata>
+        <opex:DescriptiveMetadata>
+          <opex:Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+            <opex:DigitalAssetSource>{asset.digitalAssetSource}</opex:DigitalAssetSource>
+            <opex:DigitalAssetSubtype>{asset.digitalAssetSubtype}</opex:DigitalAssetSubtype>
+            <opex:IngestDateTime>{ingestDateTime}</opex:IngestDateTime>
+            <opex:OriginalFiles>
+              {asset.originalFiles.map(originalFile => <opex:File>{originalFile}</opex:File>)}
+            </opex:OriginalFiles>
+            <opex:OriginalMetadataFiles>
+              {asset.originalMetadataFiles.map(originalMetadataFile => <opex:File>{originalMetadataFile}</opex:File>)}
+            </opex:OriginalMetadataFiles>
+            <opex:TransferDateTime>{asset.transferCompleteDatetime}</opex:TransferDateTime>
+            <opex:TransferringBody>{asset.transferringBody}</opex:TransferringBody>
+            <opex:UpstreamSystem>{asset.upstreamSystem}</opex:UpstreamSystem>
+            <opex:UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</opex:UpstreamSystemRef>
+          </opex:Source>
+        </opex:DescriptiveMetadata>
         <opex:Transfer>
           <opex:Manifest>
             <opex:Folders>
@@ -76,9 +76,9 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
           <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
           {
         if (identifiers.nonEmpty) {
-          <Identifiers>
-            {identifiers.map(identifier => <Identifier type={identifier.identifierName}>{identifier.value}</Identifier>)}
-          </Identifiers>
+          <opex:Identifiers>
+            {identifiers.map(identifier => <opex:Identifier type={identifier.identifierName}>{identifier.value}</opex:Identifier>)}
+          </opex:Identifiers>
         }
       }
         </opex:Properties>
