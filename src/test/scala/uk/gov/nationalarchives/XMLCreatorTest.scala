@@ -17,21 +17,21 @@ class XMLCreatorTest extends AnyFlatSpec {
 
   val expectedOpexXml: Elem = <opex:OPEXMetadata xmlns:opex={opexNamespace}>
     <opex:DescriptiveMetadata>
-      <opex:Source xmlns="http://dr2.nationalarchives.gov.uk/source">
-        <opex:DigitalAssetSource>digitalAssetSource</opex:DigitalAssetSource>
-        <opex:DigitalAssetSubtype>digitalAssetSubtype</opex:DigitalAssetSubtype>
-        <opex:IngestDateTime>{ingestDateTime}</opex:IngestDateTime>
-        <opex:OriginalFiles>
-          <opex:File>dec2b921-20e3-41e8-a299-f3cbc13131a2</opex:File>
-        </opex:OriginalFiles>
-        <opex:OriginalMetadataFiles>
-          <opex:File>3f42e3f2-fffe-4fe9-87f7-262e95b86d75</opex:File>
-        </opex:OriginalMetadataFiles>
-        <opex:TransferDateTime>2023-06-01T00:00Z</opex:TransferDateTime>
-        <opex:TransferringBody>transferringBody</opex:TransferringBody>
-        <opex:UpstreamSystem>upstreamSystem</opex:UpstreamSystem>
-        <opex:UpstreamSystemRef>testSystemRef2</opex:UpstreamSystemRef>
-      </opex:Source>
+      <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+        <DigitalAssetSource>digitalAssetSource</DigitalAssetSource>
+        <DigitalAssetSubtype>digitalAssetSubtype</DigitalAssetSubtype>
+        <IngestDateTime>{ingestDateTime}</IngestDateTime>
+        <OriginalFiles>
+          <File>dec2b921-20e3-41e8-a299-f3cbc13131a2</File>
+        </OriginalFiles>
+        <OriginalMetadataFiles>
+          <File>3f42e3f2-fffe-4fe9-87f7-262e95b86d75</File>
+        </OriginalMetadataFiles>
+        <TransferDateTime>2023-06-01T00:00Z</TransferDateTime>
+        <TransferringBody>transferringBody</TransferringBody>
+        <UpstreamSystem>upstreamSystem</UpstreamSystem>
+        <UpstreamSystemRef>testSystemRef2</UpstreamSystemRef>
+      </Source>
     </opex:DescriptiveMetadata>
     <opex:Transfer>
       <opex:Manifest>
