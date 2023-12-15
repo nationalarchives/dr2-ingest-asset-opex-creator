@@ -479,6 +479,6 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     val ex = intercept[Exception] {
       TestLambda().handleRequest(standardInput, outputStream, null)
     }
-    ex.getMessage should equal("Failed to retrieve metadata from the source object")
+    ex.getMessage should equal("Failed to send the request: socket connection refused.")
   }
 }
