@@ -2,6 +2,7 @@ package uk.gov.nationalarchives
 
 import cats.effect.unsafe.implicits.global
 import cats.effect._
+import cats.effect.kernel.Resource
 import cats.implicits._
 import com.amazonaws.services.lambda.runtime.{Context, RequestStreamHandler}
 import org.scanamo.syntax._
@@ -13,10 +14,11 @@ import uk.gov.nationalarchives.DynamoFormatters._
 import uk.gov.nationalarchives.Lambda._
 import upickle.default._
 import fs2.Stream
-import fs2.interop.reactivestreams.StreamOps
+import org.reactivestreams.{FlowAdapters, Publisher}
 import software.amazon.awssdk.transfer.s3.model.CompletedUpload
 
 import java.io.{InputStream, OutputStream}
+import java.nio.ByteBuffer
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -48,7 +50,7 @@ class Lambda extends RequestStreamHandler {
   }.unsafeRunSync()
 
   private def uploadXMLToS3(xmlString: String, destinationBucket: String, key: String): IO[CompletedUpload] =
-    Stream.emits[IO, Byte](xmlString.getBytes).chunks.map(_.toByteBuffer).toUnicastPublisher.use { publisher =>
+    Stream.emits[IO, Byte](xmlString.getBytes).chunks.map(_.toByteBuffer).toPublisherResource.use { publisher =>
       s3Client.upload(destinationBucket, key, xmlString.getBytes.length, publisher)
     }
 
@@ -76,6 +78,11 @@ class Lambda extends RequestStreamHandler {
 }
 
 object Lambda {
+  implicit class StreamToPublisher(stream: Stream[IO, ByteBuffer]) {
+    def toPublisherResource: Resource[IO, Publisher[ByteBuffer]] =
+      fs2.interop.flow.toPublisher(stream).map(pub => FlowAdapters.toPublisher[ByteBuffer](pub))
+  }
+
   implicit val treInputReader: Reader[Input] = macroR[Input]
 
   case class Input(id: UUID, batchId: String, executionName: String, sourceBucket: String)
