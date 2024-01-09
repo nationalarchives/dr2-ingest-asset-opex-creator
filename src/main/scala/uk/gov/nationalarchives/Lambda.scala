@@ -21,15 +21,18 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 class Lambda extends RequestStreamHandler {
-
-  val ingestDateTime: OffsetDateTime = OffsetDateTime.now()
-  private lazy val xmlCreator: XMLCreator = XMLCreator(ingestDateTime)
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
+
+  def getXmlCreator: XMLCreator = {
+    val ingestDateTime: OffsetDateTime = OffsetDateTime.now()
+    XMLCreator(ingestDateTime)
+  }
 
   override def handleRequest(inputStream: InputStream, outputStream: OutputStream, context: Context): Unit = {
     val inputString = inputStream.readAllBytes().map(_.toChar).mkString
     val input = read[Input](inputString)
+    val xmlCreator = getXmlCreator
     for {
       config <- ConfigSource.default.loadF[IO, Config]()
       assetItems <- dynamoClient.getItems[DynamoTable, PartitionKey](List(PartitionKey(input.id)), config.dynamoTableName)
@@ -39,7 +42,7 @@ class Lambda extends RequestStreamHandler {
       _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'Asset'")) else IO.unit
       children <- childrenOfAsset(asset, config.dynamoTableName, config.dynamoGsiName)
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
-      _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child)).sequence
+      _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child, xmlCreator)).sequence
       xip <- xmlCreator.createXip(asset, children.sortBy(_.sortOrder.getOrElse(Int.MaxValue)))
       _ <- uploadXMLToS3(xip, config.destinationBucket, s"${assetPath(input, asset)}/${asset.id}.xip")
       opex <- xmlCreator.createOpex(asset, children, xip.getBytes.length, asset.identifiers)
@@ -52,12 +55,12 @@ class Lambda extends RequestStreamHandler {
       s3Client.upload(destinationBucket, key, xmlString.getBytes.length, publisher)
     }
 
-  private def copyFromSourceToDestination(input: Input, destinationBucket: String, asset: DynamoTable, child: DynamoTable) = {
+  private def copyFromSourceToDestination(input: Input, destinationBucket: String, asset: DynamoTable, child: DynamoTable, xmlCreator: XMLCreator) = {
     s3Client.copy(
       input.sourceBucket,
       s"${input.batchId}/data/${child.id}",
       destinationBucket,
-      destinationPath(input, asset, child)
+      destinationPath(input, asset, child, xmlCreator)
     )
   }
 
@@ -65,7 +68,7 @@ class Lambda extends RequestStreamHandler {
 
   private def assetPath(input: Input, asset: DynamoTable) = s"${parentPath(input, asset)}/${asset.id}.pax"
 
-  private def destinationPath(input: Input, asset: DynamoTable, child: DynamoTable) =
+  private def destinationPath(input: Input, asset: DynamoTable, child: DynamoTable, xmlCreator: XMLCreator) =
     s"${assetPath(input, asset)}/${xmlCreator.bitstreamPath(child)}/${xmlCreator.childFileName(child)}"
 
   private def childrenOfAsset(asset: DynamoTable, tableName: String, gsiName: String): IO[List[DynamoTable]] = {

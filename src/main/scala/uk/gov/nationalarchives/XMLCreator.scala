@@ -6,7 +6,7 @@ import uk.gov.nationalarchives.DynamoFormatters._
 import java.time.OffsetDateTime
 import scala.xml._
 
-class XMLCreator(ingestDateTime: OffsetDateTime) {
+class XMLCreator(val ingestDateTime: OffsetDateTime) {
   private val prettyPrinter = new PrettyPrinter(200, 2)
   private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
   private[nationalarchives] def bitstreamPath(child: DynamoTable) =
@@ -34,6 +34,8 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
       identifiers: List[Identifier],
       securityDescriptor: String = "open"
   ): IO[String] = IO {
+    val transferCompleteDatetime = asset.transferCompleteDatetime
+    if (transferCompleteDatetime.isAfter(ingestDateTime)) throw new Exception("'ingestDateTime' is before 'transferCompleteDatetime'!")
     val xml =
       <opex:OPEXMetadata xmlns:opex={opexNamespace}>
         <opex:DescriptiveMetadata>
@@ -47,7 +49,7 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
             <OriginalMetadataFiles>
               {asset.originalMetadataFiles.map(originalMetadataFile => <File>{originalMetadataFile}</File>)}
             </OriginalMetadataFiles>
-            <TransferDateTime>{asset.transferCompleteDatetime}</TransferDateTime>
+            <TransferDateTime>{transferCompleteDatetime}</TransferDateTime>
             <TransferringBody>{asset.transferringBody}</TransferringBody>
             <UpstreamSystem>{asset.upstreamSystem}</UpstreamSystem>
             <UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</UpstreamSystemRef>

@@ -170,6 +170,16 @@ class XMLCreatorTest extends AnyFlatSpec {
     )
   }
 
+  "createOpex" should "throw an 'Exception' if 'ingestDateTime' is before 'transferCompleteDatetime'" in {
+    val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"), Identifier("UpstreamSystemReference", "testSystemRef2"))
+    val ingestDateTimeBeforeTransferDateTime = OffsetDateTime.parse("2023-05-31T23:59:44.848622Z")
+    val ex = intercept[Exception] {
+      XMLCreator(ingestDateTimeBeforeTransferDateTime).createOpex(asset, children, 4, identifiers).unsafeRunSync()
+    }
+
+    ex.getMessage should equal("'ingestDateTime' is before 'transferCompleteDatetime'!")
+  }
+
   "createOpex" should "create the correct opex xml with identifiers" in {
     val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"), Identifier("UpstreamSystemReference", "testSystemRef2"))
     val xml = XMLCreator(ingestDateTime).createOpex(asset, children, 4, identifiers).unsafeRunSync()
