@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 import java.io.ByteArrayInputStream
 import java.net.URI
 import java.time.OffsetDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.jdk.CollectionConverters._
 import scala.xml.{PrettyPrinter, XML}
@@ -345,7 +346,14 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       .build()
     override val dynamoClient: DADynamoDBClient[IO] = new DADynamoDBClient[IO](asyncDynamoClient)
     override val s3Client: DAS3Client[IO] = DAS3Client[IO](asyncS3Client)
-    override val ingestDateTime: OffsetDateTime = OffsetDateTime.parse("2023-09-01T00:00Z")
+    override def getXmlCreator: XMLCreator = XMLCreator(OffsetDateTime.parse("2023-09-01T00:00Z"))
+  }
+
+  "getXmlCreator" should "return an XmlCreator with an ingest time within microseconds of the current time" in {
+    val xmlCreator: XMLCreator = new Lambda().getXmlCreator
+
+    xmlCreator.getClass.getName should equal("uk.gov.nationalarchives.XMLCreator")
+    xmlCreator.ingestDateTime.truncatedTo(ChronoUnit.SECONDS) should equal(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS))
   }
 
   "handleRequest" should "return an error if the asset is not found in dynamo" in {
