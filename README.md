@@ -10,6 +10,16 @@ The lambda will:
 * Create an OPEX xml file and uploads it to S3.
 
 ## Example
+Given the following input:
+```json
+{
+  "id": "68b1c80b-36b8-4f0f-94d6-92589002d87e",
+  "batchId": "test-batch-id",
+  "executionName": "test-execution-name",
+  "sourceBucket": "source-bucket"
+}
+```
+
 Given an asset:
 ```json
 {

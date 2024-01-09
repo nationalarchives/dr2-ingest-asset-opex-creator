@@ -124,12 +124,14 @@ class XMLCreatorTest extends AnyFlatSpec {
       </Bitstream>
   </XIP>
 
-  val asset: DynamoTable = DynamoTable(
+  val asset: AssetDynamoTable = AssetDynamoTable(
     "TEST-ID",
     UUID.fromString("90730c77-8faa-4dbf-b20d-bba1046dac87"),
     Option("parentPath"),
     "name",
     Asset,
+    Option("title"),
+    Option("description"),
     "transferringBody",
     OffsetDateTime.parse("2023-06-01T00:00Z"),
     "upstreamSystem",
@@ -137,35 +139,22 @@ class XMLCreatorTest extends AnyFlatSpec {
     "digitalAssetSubtype",
     List(UUID.fromString("dec2b921-20e3-41e8-a299-f3cbc13131a2")),
     List(UUID.fromString("3f42e3f2-fffe-4fe9-87f7-262e95b86d75")),
-    Option("title"),
-    Option("description"),
-    Option(1),
-    Option(1),
-    Option("checksum"),
-    Option("ext"),
     List(Identifier("Test2", "testIdentifier2"), Identifier("Test", "testIdentifier"), Identifier("UpstreamSystemReference", "testSystemRef"))
   )
   val uuids: List[UUID] = List(UUID.fromString("a814ee41-89f4-4975-8f92-303553fe9a02"), UUID.fromString("9ecbba86-437f-42c6-aeba-e28b678bbf4c"))
-  val children: List[DynamoTable] = uuids.zipWithIndex.map { case (uuid, suffix) =>
-    DynamoTable(
+  val children: List[FileDynamoTable] = uuids.zipWithIndex.map { case (uuid, suffix) =>
+    FileDynamoTable(
       "TEST-ID",
       uuid,
       Option(s"parentPath$suffix"),
       s"name$suffix",
-      Asset,
-      s"transferringBody$suffix",
-      OffsetDateTime.parse("2023-09-01T00:00Z"),
-      s"upstreamSystem$suffix",
-      s"digitalAssetSource$suffix",
-      s"digitalAssetSubtype$suffix",
-      List(UUID.fromString("4c338507-682f-42b6-b7a4-fba00195c660")),
-      List(UUID.fromString("34b0ff5a-c06e-4ebb-99d2-6064b4912aca")),
+      File,
       Option(s"title$suffix"),
       Option(s"description$suffix"),
-      Option(suffix),
-      Option(1),
-      Option(s"checksum$suffix"),
-      Option(s"ext$suffix"),
+      suffix,
+      1,
+      s"checksum$suffix",
+      s"ext$suffix",
       List(Identifier("Test2", "testIdentifier4"), Identifier("Test", "testIdentifier3"), Identifier("UpstreamSystemReference", "testSystemRef2"))
     )
   }

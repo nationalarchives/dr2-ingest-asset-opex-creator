@@ -6,8 +6,9 @@ ThisBuild / scalaVersion := "2.13.12"
 
 lazy val root = (project in file(".")).settings(
   name := "dr2-ingest-asset-opex-creator",
+  resolvers += "s01-oss-sonatype-org-snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots",
   libraryDependencies ++= Seq(
-    fs2Reactive,
+    fs2Core,
     log4jSlf4j,
     log4jCore,
     log4jTemplateJson,
