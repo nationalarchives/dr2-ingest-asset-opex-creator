@@ -33,11 +33,11 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
       assetXipSize: Long,
       identifiers: List[Identifier],
       securityDescriptor: String = "open"
-  ): IO[String] = IO {
+  ): IO[String] = {
     val transferCompleteDatetime = asset.transferCompleteDatetime
-    if (transferCompleteDatetime.isAfter(ingestDateTime)) throw new Exception("'ingestDateTime' is before 'transferCompleteDatetime'!")
-    val xml =
-      <opex:OPEXMetadata xmlns:opex={opexNamespace}>
+    IO.raiseWhen(transferCompleteDatetime.isAfter(ingestDateTime))(new Exception("'ingestDateTime' is before 'transferCompleteDatetime'!")).map { _ =>
+      val xml =
+        <opex:OPEXMetadata xmlns:opex={opexNamespace}>
         <opex:DescriptiveMetadata>
           <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
             <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
@@ -59,12 +59,12 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
           <opex:Manifest>
             <opex:Folders>
               {
-        children
-          .map(bitstreamPath)
-          .flatMap(path => getAllPaths(path))
-          .toSet
-          .map((folder: String) => <opex:Folder>{folder}</opex:Folder>)
-      }
+          children
+            .map(bitstreamPath)
+            .flatMap(path => getAllPaths(path))
+            .toSet
+            .map((folder: String) => <opex:Folder>{folder}</opex:Folder>)
+        }
             </opex:Folders>
             <opex:Files>
               <opex:File type="metadata" size={assetXipSize.toString}>{asset.id}.xip</opex:File>
@@ -77,15 +77,18 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
           <opex:Description>{asset.description.getOrElse("")}</opex:Description>
           <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
           {
-        if (identifiers.nonEmpty) {
-          <opex:Identifiers>
-            {identifiers.map(identifier => <opex:Identifier type={identifier.identifierName}>{identifier.value}</opex:Identifier>)}
+          if (identifiers.nonEmpty) {
+            <opex:Identifiers>
+            {
+              identifiers.map(identifier => <opex:Identifier type={identifier.identifierName}>{identifier.value}</opex:Identifier>)
+            }
           </opex:Identifiers>
+          }
         }
-      }
-        </opex:Properties>
-      </opex:OPEXMetadata>
-    prettyPrinter.format(xml)
+          </opex:Properties>
+        </opex:OPEXMetadata>
+      prettyPrinter.format(xml)
+    }
   }
 
   private[nationalarchives] def createXip(asset: AssetDynamoTable, children: List[FileDynamoTable], securityTag: String = "open"): IO[String] = {
