@@ -6,7 +6,7 @@ import uk.gov.nationalarchives.DynamoFormatters._
 import java.time.OffsetDateTime
 import scala.xml._
 
-class XMLCreator(val ingestDateTime: OffsetDateTime) {
+class XMLCreator(ingestDateTime: OffsetDateTime) {
   private val prettyPrinter = new PrettyPrinter(200, 2)
   private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
   private[nationalarchives] def bitstreamPath(child: DynamoTable) =
