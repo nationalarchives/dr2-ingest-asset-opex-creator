@@ -12,6 +12,8 @@ lazy val root = (project in file(".")).settings(
     log4jSlf4j,
     log4jCore,
     log4jTemplateJson,
+    log4CatsCore,
+    log4CatsSlf4j,
     lambdaCore,
     dynamoClient,
     dynamoFormatters,

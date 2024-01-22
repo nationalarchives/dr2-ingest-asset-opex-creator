@@ -7,6 +7,8 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestStreamHandler}
 import fs2.Stream
 import org.reactivestreams.FlowAdapters
 import org.scanamo.syntax._
+import org.typelevel.log4cats.slf4j.Slf4jFactory
+import org.typelevel.log4cats.{LoggerName, SelfAwareStructuredLogger}
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
@@ -24,6 +26,9 @@ class Lambda extends RequestStreamHandler {
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
 
+  implicit val loggerName: LoggerName = LoggerName("Ingest Parsed Court Document Event Handler")
+  private val logger: SelfAwareStructuredLogger[IO] = Slf4jFactory.create[IO].getLogger
+
   def getXmlCreator: XMLCreator = {
     val ingestDateTime: OffsetDateTime = OffsetDateTime.now()
     XMLCreator(ingestDateTime)
@@ -39,16 +44,27 @@ class Lambda extends RequestStreamHandler {
       asset <- IO.fromOption(assetItems.headOption)(
         new Exception(s"No asset found for ${input.id} and ${input.batchId}")
       )
+      fileReference = asset.identifiers.find(_.identifierName == "BornDigitalRef").map(_.value).orNull
+      log = logger.info(Map("batchRef" -> input.batchId, "fileReference" -> fileReference))(_)
       _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'Asset'")) else IO.unit
+      _ <- log(s"Asset ${asset.id} retrieved from Dynamo")
+
       children <- childrenOfAsset(asset, config.dynamoTableName, config.dynamoGsiName)
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
+      _ <- log(s"${children.length} children found for asset ${asset.id}")
+
       _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child, xmlCreator)).sequence
       xip <- xmlCreator.createXip(asset, children.sortBy(_.sortOrder))
       _ <- uploadXMLToS3(xip, config.destinationBucket, s"${assetPath(input, asset)}/${asset.id}.xip")
+      _ <- log(s"XIP ${assetPath(input, asset)}/${asset.id}.xip uploaded to ${config.destinationBucket}")
+
       opex <- xmlCreator.createOpex(asset, children, xip.getBytes.length, asset.identifiers)
       _ <- uploadXMLToS3(opex, config.destinationBucket, s"${parentPath(input, asset)}/${asset.id}.pax.opex")
+      _ <- log(s"OPEX ${parentPath(input, asset)}/${asset.id}.pax.opex uploaded to ${config.destinationBucket}")
     } yield ()
-  }.unsafeRunSync()
+  }.onError(logLambdaError).unsafeRunSync()
+
+  private def logLambdaError(error: Throwable): IO[Unit] = logger.error(error)("Error ingest asset opex creator")
 
   private def uploadXMLToS3(xmlString: String, destinationBucket: String, key: String): IO[CompletedUpload] =
     Stream.emits[IO, Byte](xmlString.getBytes).chunks.map(_.toByteBuffer).toPublisherResource.use { publisher =>
