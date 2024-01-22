@@ -1,24 +1,22 @@
 package uk.gov.nationalarchives
 
-import cats.effect.unsafe.implicits.global
 import cats.effect._
-import cats.effect.kernel.Resource
+import cats.effect.unsafe.implicits.global
 import cats.implicits._
 import com.amazonaws.services.lambda.runtime.{Context, RequestStreamHandler}
+import fs2.Stream
+import org.reactivestreams.FlowAdapters
 import org.scanamo.syntax._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
+import software.amazon.awssdk.transfer.s3.model.CompletedUpload
 import uk.gov.nationalarchives.DADynamoDBClient._
 import uk.gov.nationalarchives.DynamoFormatters._
 import uk.gov.nationalarchives.Lambda._
 import upickle.default._
-import fs2.Stream
-import org.reactivestreams.{FlowAdapters, Publisher}
-import software.amazon.awssdk.transfer.s3.model.CompletedUpload
 
 import java.io.{InputStream, OutputStream}
-import java.nio.ByteBuffer
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -54,7 +52,7 @@ class Lambda extends RequestStreamHandler {
 
   private def uploadXMLToS3(xmlString: String, destinationBucket: String, key: String): IO[CompletedUpload] =
     Stream.emits[IO, Byte](xmlString.getBytes).chunks.map(_.toByteBuffer).toPublisherResource.use { publisher =>
-      s3Client.upload(destinationBucket, key, xmlString.getBytes.length, publisher)
+      s3Client.upload(destinationBucket, key, xmlString.getBytes.length, FlowAdapters.toPublisher(publisher))
     }
 
   private def copyFromSourceToDestination(input: Input, destinationBucket: String, asset: AssetDynamoTable, child: FileDynamoTable, xmlCreator: XMLCreator) = {
@@ -81,11 +79,6 @@ class Lambda extends RequestStreamHandler {
 }
 
 object Lambda {
-  implicit class StreamToPublisher(stream: Stream[IO, ByteBuffer]) {
-    def toPublisherResource: Resource[IO, Publisher[ByteBuffer]] =
-      fs2.interop.flow.toPublisher(stream).map(pub => FlowAdapters.toPublisher[ByteBuffer](pub))
-  }
-
   implicit val treInputReader: Reader[Input] = macroR[Input]
 
   case class Input(id: UUID, batchId: String, executionName: String, sourceBucket: String)
