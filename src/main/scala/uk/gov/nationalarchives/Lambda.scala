@@ -26,7 +26,7 @@ class Lambda extends RequestStreamHandler {
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
 
-  implicit val loggerName: LoggerName = LoggerName("Ingest Parsed Court Document Event Handler")
+  implicit val loggerName: LoggerName = LoggerName("Ingest Asset Opex Creator")
   private val logger: SelfAwareStructuredLogger[IO] = Slf4jFactory.create[IO].getLogger
 
   def getXmlCreator: XMLCreator = {
