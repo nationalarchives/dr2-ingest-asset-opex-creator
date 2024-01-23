@@ -26,7 +26,7 @@ class Lambda extends RequestStreamHandler {
   val dynamoClient: DADynamoDBClient[IO] = DADynamoDBClient[IO]()
   val s3Client: DAS3Client[IO] = DAS3Client[IO]()
 
-  implicit val loggerName: LoggerName = LoggerName("Ingest Asset Opex Creator")
+  implicit val loggerName: LoggerName = LoggerName(sys.env("AWS_LAMBDA_FUNCTION_NAME"))
   private val logger: SelfAwareStructuredLogger[IO] = Slf4jFactory.create[IO].getLogger
 
   def getXmlCreator: XMLCreator = {
@@ -45,7 +45,7 @@ class Lambda extends RequestStreamHandler {
         new Exception(s"No asset found for ${input.id} and ${input.batchId}")
       )
       fileReference = asset.identifiers.find(_.identifierName == "BornDigitalRef").map(_.value).orNull
-      log = logger.info(Map("batchRef" -> input.batchId, "fileReference" -> fileReference))(_)
+      log = logger.info(Map("batchRef" -> input.batchId, "fileReference" -> fileReference, "assetId" -> asset.id.toString))(_)
       _ <- if (asset.`type` != Asset) IO.raiseError(new Exception(s"Object ${asset.id} is of type ${asset.`type`} and not 'Asset'")) else IO.unit
       _ <- log(s"Asset ${asset.id} retrieved from Dynamo")
 
@@ -53,6 +53,7 @@ class Lambda extends RequestStreamHandler {
       _ <- IO.fromOption(children.headOption)(new Exception(s"No children found for ${input.id} and ${input.batchId}"))
       _ <- log(s"${children.length} children found for asset ${asset.id}")
 
+      _ <- log(s"Starting copy from ${input.sourceBucket} to ${config.destinationBucket}")
       _ <- children.map(child => copyFromSourceToDestination(input, config.destinationBucket, asset, child, xmlCreator)).sequence
       xip <- xmlCreator.createXip(asset, children.sortBy(_.sortOrder))
       _ <- uploadXMLToS3(xip, config.destinationBucket, s"${assetPath(input, asset)}/${asset.id}.xip")
