@@ -38,57 +38,59 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
     IO.raiseWhen(transferCompleteDatetime.isAfter(ingestDateTime))(new Exception("'ingestDateTime' is before 'transferCompleteDatetime'!")).map { _ =>
       val xml =
         <opex:OPEXMetadata xmlns:opex={opexNamespace}>
-        <opex:DescriptiveMetadata>
-          <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
-            <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
-            <DigitalAssetSubtype>{asset.digitalAssetSubtype}</DigitalAssetSubtype>
-            <IngestDateTime>{ingestDateTime}</IngestDateTime>
-            <OriginalFiles>
-              {asset.originalFiles.map(originalFile => <File>{originalFile}</File>)}
-            </OriginalFiles>
-            <OriginalMetadataFiles>
-              {asset.originalMetadataFiles.map(originalMetadataFile => <File>{originalMetadataFile}</File>)}
-            </OriginalMetadataFiles>
-            <TransferDateTime>{transferCompleteDatetime}</TransferDateTime>
-            <TransferringBody>{asset.transferringBody}</TransferringBody>
-            <UpstreamSystem>{asset.upstreamSystem}</UpstreamSystem>
-            <UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</UpstreamSystemRef>
-          </Source>
-        </opex:DescriptiveMetadata>
-        <opex:Transfer>
-          <opex:Manifest>
-            <opex:Folders>
-              {
+            <opex:DescriptiveMetadata>
+              <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+                <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
+                <DigitalAssetSubtype>{asset.digitalAssetSubtype}</DigitalAssetSubtype>
+                <IngestDateTime>{ingestDateTime}</IngestDateTime>
+                <OriginalFiles>
+                  {asset.originalFiles.map(originalFile => <File>{originalFile}</File>)}
+                </OriginalFiles>
+                <OriginalMetadataFiles>
+                  {asset.originalMetadataFiles.map(originalMetadataFile => <File>{originalMetadataFile}</File>)}
+                </OriginalMetadataFiles>
+                <TransferDateTime>{transferCompleteDatetime}</TransferDateTime>
+                <TransferringBody>{asset.transferringBody}</TransferringBody>
+                <UpstreamSystem>{asset.upstreamSystem}</UpstreamSystem>
+                <UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</UpstreamSystemRef>
+              </Source>
+            </opex:DescriptiveMetadata>
+            <opex:Transfer>
+              <opex:SourceID>{asset.name}</opex:SourceID>
+              <opex:Manifest>
+                <opex:Folders>
+                  {
           children
             .map(bitstreamPath)
             .flatMap(path => getAllPaths(path))
             .toSet
             .map((folder: String) => <opex:Folder>{folder}</opex:Folder>)
         }
-            </opex:Folders>
-            <opex:Files>
-              <opex:File type="metadata" size={assetXipSize.toString}>{asset.id}.xip</opex:File>
-              {children.map(child => <opex:File type="content" size={child.fileSize.toString}>{bitstreamPath(child)}/{childFileName(child)}</opex:File>)}
-            </opex:Files>
-          </opex:Manifest>
-        </opex:Transfer>
-        <opex:Properties>
-          <opex:Title>{asset.title.getOrElse(asset.name)}</opex:Title>
-          <opex:Description>{asset.description.getOrElse("")}</opex:Description>
-          <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
-          {
+                </opex:Folders>
+                <opex:Files>
+                  <opex:File type="metadata" size={assetXipSize.toString}>{asset.id}.xip</opex:File>
+                  {children.map(child => <opex:File type="content" size={child.fileSize.toString}>{bitstreamPath(child)}/{childFileName(child)}</opex:File>)}
+                </opex:Files>
+              </opex:Manifest>
+            </opex:Transfer>
+            <opex:Properties>
+              <opex:Title>{asset.title.getOrElse(asset.name)}</opex:Title>
+              <opex:Description>{asset.description.getOrElse("")}</opex:Description>
+              <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
+              {
           if (identifiers.nonEmpty) {
             <opex:Identifiers>
-            {
+                  {
               identifiers.map(identifier => <opex:Identifier type={identifier.identifierName}>{identifier.value}</opex:Identifier>)
             }
-          </opex:Identifiers>
+                </opex:Identifiers>
           }
         }
-          </opex:Properties>
-        </opex:OPEXMetadata>
+            </opex:Properties>
+          </opex:OPEXMetadata>
       prettyPrinter.format(xml)
     }
+
   }
 
   private[nationalarchives] def createXip(asset: AssetDynamoTable, children: List[FileDynamoTable], securityTag: String = "open"): IO[String] = {

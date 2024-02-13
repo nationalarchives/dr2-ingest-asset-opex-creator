@@ -114,6 +114,7 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
       </Source>
     </opex:DescriptiveMetadata>
     <opex:Transfer>
+      <opex:SourceID>Test Name</opex:SourceID>
       <opex:Manifest>
         <opex:Folders>
           <opex:Folder>Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793/Generation_1</opex:Folder>

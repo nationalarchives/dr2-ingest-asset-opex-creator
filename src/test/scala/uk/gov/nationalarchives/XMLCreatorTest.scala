@@ -34,6 +34,7 @@ class XMLCreatorTest extends AnyFlatSpec {
       </Source>
     </opex:DescriptiveMetadata>
     <opex:Transfer>
+      <opex:SourceID>name</opex:SourceID>
       <opex:Manifest>
         <opex:Folders>
           <opex:Folder>Representation_Preservation/a814ee41-89f4-4975-8f92-303553fe9a02/Generation_1</opex:Folder>
