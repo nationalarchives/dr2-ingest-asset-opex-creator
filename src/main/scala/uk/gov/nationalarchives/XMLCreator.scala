@@ -90,7 +90,6 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
           </opex:OPEXMetadata>
       prettyPrinter.format(xml)
     }
-
   }
 
   private[nationalarchives] def createXip(asset: AssetDynamoTable, children: List[FileDynamoTable], securityTag: String = "open"): IO[String] = {
