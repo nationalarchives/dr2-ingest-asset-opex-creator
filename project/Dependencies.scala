@@ -1,8 +1,8 @@
 import sbt._
 object Dependencies {
-  lazy val logbackVersion = "2.22.1"
+  lazy val logbackVersion = "2.23.0"
   lazy val pureConfigVersion = "0.17.6"
-  private val daAwsClientsVersion = "0.1.37"
+  private val daAwsClientsVersion = "0.1.38"
   private val log4CatsVersion = "2.6.0"
 
   lazy val awsCrt = "software.amazon.awssdk.crt" % "aws-crt" % "0.29.11"
@@ -16,7 +16,7 @@ object Dependencies {
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val lambdaCore = "com.amazonaws" % "aws-lambda-java-core" % "1.2.3"
   lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "2.2.0"
-  lazy val upickle = "com.lihaoyi" %% "upickle" % "3.1.5"
+  lazy val upickle = "com.lihaoyi" %% "upickle" % "3.2.0"
   lazy val dynamoClient = "uk.gov.nationalarchives" %% "da-dynamodb-client" % daAwsClientsVersion
   lazy val dynamoFormatters = "uk.gov.nationalarchives" %% "dynamo-formatters" % "0.0.9"
   lazy val s3Client = "uk.gov.nationalarchives" %% "da-s3-client" % daAwsClientsVersion
