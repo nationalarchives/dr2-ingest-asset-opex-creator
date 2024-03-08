@@ -177,6 +177,33 @@ class XMLCreatorTest extends AnyFlatSpec {
     xml should equal(expectedOpexXml.toString)
   }
 
+  "createOpex" should "create the correct opex xml with identifiers and an asset with the exact title that was in the table " +
+    "(with relevant chars escaped) even if the title has an ASCII character in it" in {
+      val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"), Identifier("UpstreamSystemReference", "testSystemRef2"))
+
+      val assetWithTitleWithChars = asset.copy(
+        title = Some("""Title_with_ASCII_Chars_!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~""")
+      )
+      val xml = XMLCreator(ingestDateTime).createOpex(assetWithTitleWithChars, children, 4, identifiers).unsafeRunSync()
+      val expectedOpexXmlWithNewTitle =
+        expectedOpexXml.toString.replace(
+          "<opex:Title>title</opex:Title>",
+          """<opex:Title>Title_with_ASCII_Chars_!&quot;#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~</opex:Title>"""
+        )
+      xml should equal(expectedOpexXmlWithNewTitle)
+    }
+
+  "createOpex" should "create the correct opex xml with identifiers and an asset with the exact title that was in the table " +
+    "(with relevant chars escaped) even if the title has multiple spaces" in {
+      val identifiers = List(Identifier("Test1", "Value1"), Identifier("Test2", "Value2"), Identifier("UpstreamSystemReference", "testSystemRef2"))
+
+      val assetWithTitleWithChars = asset.copy(title = Some("A title     with   spaces  in            it"))
+      val xml = XMLCreator(ingestDateTime).createOpex(assetWithTitleWithChars, children, 4, identifiers).unsafeRunSync()
+      val expectedOpexXmlWithNewTitle =
+        expectedOpexXml.toString.replace("<opex:Title>title</opex:Title>", "<opex:Title>A title     with   spaces  in            it</opex:Title>")
+      xml should equal(expectedOpexXmlWithNewTitle)
+    }
+
   "createOpex" should "throw a 'NoSuchElementException' if the identifiers the opex need are missing" in {
     val ex = intercept[NoSuchElementException] {
       XMLCreator(ingestDateTime).createOpex(asset, children, 4, Nil).unsafeRunSync()
@@ -188,4 +215,34 @@ class XMLCreatorTest extends AnyFlatSpec {
     val xml = XMLCreator(ingestDateTime).createXip(asset, children).unsafeRunSync()
     xml should equal(expectedXipXml.toString() + "\n")
   }
+
+  "createXip" should "create the correct xip xml with children that have the exact title that was in the table " +
+    "(with relevant chars escaped) even if the title has an ASCII character in it" in {
+      val childrenWithTitleWithChars =
+        children.map(
+          _.copy(name = """Title_with_ASCII_Chars_!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~""")
+        )
+      val xml = XMLCreator(ingestDateTime).createXip(asset, childrenWithTitleWithChars).unsafeRunSync()
+      val expectedXipXmlWithNewTitle = s"${expectedXipXml.toString()}\n"
+        .replace(
+          "<Title>name0</Title>",
+          """<Title>Title_with_ASCII_Chars_!&quot;#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~</Title>"""
+        )
+        .replace(
+          "<Title>name1</Title>",
+          """<Title>Title_with_ASCII_Chars_!&quot;#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~</Title>"""
+        )
+      xml should equal(expectedXipXmlWithNewTitle)
+    }
+
+  "createXip" should "create the correct xip xml with children that have the exact title that was in the table " +
+    "(with relevant chars escaped) even if the title has multiple spaces" in {
+      val childrenWithTitleWithChars =
+        children.map(_.copy(name = "A title     with   spaces  in            it"))
+      val xml = XMLCreator(ingestDateTime).createXip(asset, childrenWithTitleWithChars).unsafeRunSync()
+      val expectedXipXmlWithNewTitle = s"${expectedXipXml.toString()}\n"
+        .replace("<Title>name0</Title>", "<Title>A title     with   spaces  in            it</Title>")
+        .replace("<Title>name1</Title>", "<Title>A title     with   spaces  in            it</Title>")
+      xml should equal(expectedXipXmlWithNewTitle)
+    }
 }
