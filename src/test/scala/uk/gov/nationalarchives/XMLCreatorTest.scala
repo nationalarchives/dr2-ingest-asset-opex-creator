@@ -63,7 +63,7 @@ class XMLCreatorTest extends AnyFlatSpec {
         </opex:OPEXMetadata>
 
   val expectedXipXml: Elem =
-    <XIP xmlns="http://preservica.com/XIP/v6.4">
+    <XIP xmlns="http://preservica.com/XIP/v7.0">
       <InformationObject>
         <Ref>90730c77-8faa-4dbf-b20d-bba1046dac87</Ref>
         <SecurityTag>open</SecurityTag>

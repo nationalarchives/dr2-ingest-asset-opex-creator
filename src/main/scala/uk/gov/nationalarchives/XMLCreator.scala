@@ -106,7 +106,7 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
 
   private[nationalarchives] def createXip(asset: AssetDynamoTable, children: List[FileDynamoTable], securityTag: String = "open"): IO[String] = {
     val xip =
-      <XIP xmlns="http://preservica.com/XIP/v6.4">
+      <XIP xmlns="http://preservica.com/XIP/v7.0">
       <InformationObject>
         <Ref>{asset.id}</Ref>
         <SecurityTag>{securityTag}</SecurityTag>
