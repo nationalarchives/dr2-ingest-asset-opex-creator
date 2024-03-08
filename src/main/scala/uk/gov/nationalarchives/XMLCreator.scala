@@ -4,10 +4,8 @@ import cats.effect.IO
 import uk.gov.nationalarchives.DynamoFormatters._
 
 import java.time.OffsetDateTime
-import scala.xml._
 
 class XMLCreator(ingestDateTime: OffsetDateTime) {
-  private val prettyPrinter = new PrettyPrinter(200, 2)
   private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
   private[nationalarchives] def bitstreamPath(child: DynamoTable) =
     s"Representation_Preservation/${child.id}/Generation_1"
@@ -38,62 +36,77 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
     IO.raiseWhen(transferCompleteDatetime.isAfter(ingestDateTime))(new Exception("'ingestDateTime' is before 'transferCompleteDatetime'!")).map { _ =>
       val xml =
         <opex:OPEXMetadata xmlns:opex={opexNamespace}>
-            <opex:DescriptiveMetadata>
-              <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
-                <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
-                <DigitalAssetSubtype>{asset.digitalAssetSubtype}</DigitalAssetSubtype>
-                <IngestDateTime>{ingestDateTime}</IngestDateTime>
-                <OriginalFiles>
-                  {asset.originalFiles.map(originalFile => <File>{originalFile}</File>)}
-                </OriginalFiles>
-                <OriginalMetadataFiles>
-                  {asset.originalMetadataFiles.map(originalMetadataFile => <File>{originalMetadataFile}</File>)}
-                </OriginalMetadataFiles>
-                <TransferDateTime>{transferCompleteDatetime}</TransferDateTime>
-                <TransferringBody>{asset.transferringBody}</TransferringBody>
-                <UpstreamSystem>{asset.upstreamSystem}</UpstreamSystem>
-                <UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</UpstreamSystemRef>
-              </Source>
-            </opex:DescriptiveMetadata>
-            <opex:Transfer>
-              <opex:SourceID>{asset.name}</opex:SourceID>
-              <opex:Manifest>
-                <opex:Folders>
-                  {
+          <opex:DescriptiveMetadata>
+            <Source xmlns="http://dr2.nationalarchives.gov.uk/source">
+              <DigitalAssetSource>{asset.digitalAssetSource}</DigitalAssetSource>
+              <DigitalAssetSubtype>{asset.digitalAssetSubtype}</DigitalAssetSubtype>
+              <IngestDateTime>{ingestDateTime}</IngestDateTime>
+              <OriginalFiles>
+                {asset.originalFiles.map(originalFile => <File>{originalFile}</File>)}
+              </OriginalFiles>
+              <OriginalMetadataFiles>
+                {asset.originalMetadataFiles.map(originalMetadataFile => <File>{originalMetadataFile}</File>)}
+              </OriginalMetadataFiles>
+              <TransferDateTime>{transferCompleteDatetime}</TransferDateTime>
+              <TransferringBody>{asset.transferringBody}</TransferringBody>
+              <UpstreamSystem>{asset.upstreamSystem}</UpstreamSystem>
+              <UpstreamSystemRef>{identifiers.find(_.identifierName == "UpstreamSystemReference").get.value}</UpstreamSystemRef>
+            </Source>
+          </opex:DescriptiveMetadata>
+          <opex:Transfer>
+            <opex:SourceID>{asset.name}</opex:SourceID>
+            <opex:Manifest>
+              <opex:Folders>
+                {
           children
             .map(bitstreamPath)
             .flatMap(path => getAllPaths(path))
-            .toSet
-            .map((folder: String) => <opex:Folder>{folder}</opex:Folder>)
+            .distinct
+            .zipWithIndex
+            .map { case (folder: String, index: Int) =>
+              val folderOpex = <opex:Folder>{folder}</opex:Folder>
+              List(if (index == 0) "" else "\n                ", folderOpex)
+            }
         }
-                </opex:Folders>
-                <opex:Files>
-                  <opex:File type="metadata" size={assetXipSize.toString}>{asset.id}.xip</opex:File>
-                  {children.map(child => <opex:File type="content" size={child.fileSize.toString}>{bitstreamPath(child)}/{childFileName(child)}</opex:File>)}
-                </opex:Files>
-              </opex:Manifest>
-            </opex:Transfer>
-            <opex:Properties>
-              <opex:Title>{asset.title.getOrElse(asset.name)}</opex:Title>
-              <opex:Description>{asset.description.getOrElse("")}</opex:Description>
-              <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
-              {
+              </opex:Folders>
+              <opex:Files>
+                <opex:File type="metadata" size={assetXipSize.toString}>{asset.id}.xip</opex:File>
+                {
+          children.zipWithIndex
+            .map { case (child, index) =>
+              val fileOpex = <opex:File type="content" size={child.fileSize.toString}>{bitstreamPath(child)}/{childFileName(child)}</opex:File>
+              List(if (index == 0) "" else "\n                ", fileOpex)
+            }
+        }
+              </opex:Files>
+            </opex:Manifest>
+          </opex:Transfer>
+          <opex:Properties>
+            <opex:Title>{asset.title.getOrElse(asset.name)}</opex:Title>
+            <opex:Description>{asset.description.getOrElse("")}</opex:Description>
+            <opex:SecurityDescriptor>{securityDescriptor}</opex:SecurityDescriptor>
+            {
           if (identifiers.nonEmpty) {
             <opex:Identifiers>
-                  {
-              identifiers.map(identifier => <opex:Identifier type={identifier.identifierName}>{identifier.value}</opex:Identifier>)
+              {
+              identifiers.zipWithIndex
+                .map { case (identifier, index) =>
+                  val identifierOpex = <opex:Identifier type={identifier.identifierName}>{identifier.value}</opex:Identifier>
+                  List(if (index == 0) "" else "\n              ", identifierOpex)
+                }
             }
-                </opex:Identifiers>
+            </opex:Identifiers>
           }
         }
-            </opex:Properties>
-          </opex:OPEXMetadata>
-      prettyPrinter.format(xml)
+          </opex:Properties>
+        </opex:OPEXMetadata>
+      xml.toString()
     }
   }
 
   private[nationalarchives] def createXip(asset: AssetDynamoTable, children: List[FileDynamoTable], securityTag: String = "open"): IO[String] = {
-    val xip = <XIP xmlns="http://preservica.com/XIP/v6.4">
+    val xip =
+      <XIP xmlns="http://preservica.com/XIP/v6.4">
       <InformationObject>
         <Ref>{asset.id}</Ref>
         <SecurityTag>{securityTag}</SecurityTag>
@@ -104,38 +117,49 @@ class XMLCreator(ingestDateTime: OffsetDateTime) {
         <Type>Preservation</Type>
         <Name>Preservation</Name>
         <ContentObjects>
-          {children.map(child => <ContentObject>{child.id}</ContentObject>)}
+          {
+        children.zipWithIndex
+          .map { case (child, index) =>
+            val contentObjectElement = <ContentObject>{child.id}</ContentObject>
+            List(if (index == 0) "" else "\n          ", contentObjectElement)
+          }
+      }
         </ContentObjects>
       </Representation>
       {
-      children.map { child =>
-        <ContentObject>
-          <Ref>{child.id}</Ref>
-          <Title>{child.name}</Title>
-          <Parent>{asset.id}</Parent>
-          <SecurityTag>{securityTag}</SecurityTag>
-        </ContentObject>
-          <Generation original="true" active="true">
-            <ContentObject>{child.id}</ContentObject>
-            <Bitstreams>
-              <Bitstream>{bitstreamPath(child)}/{childFileName(child)}</Bitstream>
-            </Bitstreams>
-          </Generation>
-          <Bitstream>
-            <Filename>{childFileName(child)}</Filename>
-            <FileSize>{child.fileSize}</FileSize>
-            <PhysicalLocation>{bitstreamPath(child)}</PhysicalLocation>
-            <Fixities>
-              <Fixity>
-                <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
-                <FixityValue>{child.checksumSha256}</FixityValue>
-              </Fixity>
-            </Fixities>
-          </Bitstream>
+        children.zipWithIndex
+          .map { case (child, index) =>
+            val contentElement =
+              <ContentObject>
+        <Ref>{child.id}</Ref>
+        <Title>{child.name}</Title>
+        <Parent>{asset.id}</Parent>
+        <SecurityTag>{securityTag}</SecurityTag>
+      </ContentObject>
+            val generationElement =
+              <Generation original="true" active="true">
+        <ContentObject>{child.id}</ContentObject>
+        <Bitstreams>
+          <Bitstream>{bitstreamPath(child)}/{childFileName(child)}</Bitstream>
+        </Bitstreams>
+      </Generation>
+            val bitstreamElement =
+              <Bitstream>
+        <Filename>{childFileName(child)}</Filename>
+        <FileSize>{child.fileSize}</FileSize>
+        <PhysicalLocation>{bitstreamPath(child)}</PhysicalLocation>
+        <Fixities>
+          <Fixity>
+            <FixityAlgorithmRef>SHA256</FixityAlgorithmRef>
+            <FixityValue>{child.checksumSha256}</FixityValue>
+          </Fixity>
+        </Fixities>
+      </Bitstream>
+            List(if (index == 0) "" else "\n      ", contentElement, "\n      ", generationElement, "\n      ", bitstreamElement)
+          }
       }
-    }
   </XIP>
-    IO(prettyPrinter.format(xip) + "\n")
+    IO(xip.toString + "\n")
   }
 }
 object XMLCreator {
