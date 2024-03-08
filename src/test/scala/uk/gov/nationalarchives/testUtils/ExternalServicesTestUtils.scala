@@ -100,11 +100,11 @@ class ExternalServicesTestUtils(dynamoServer: WireMockServer, s3Server: WireMock
       <opex:SourceID>Test Name</opex:SourceID>
       <opex:Manifest>
         <opex:Folders>
-          <opex:Folder>Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793/Generation_1</opex:Folder>
-          <opex:Folder>Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793</opex:Folder>
+          <opex:Folder>Representation_Preservation</opex:Folder>
           <opex:Folder>Representation_Preservation/a25d33f3-7726-4fb3-8e6f-f66358451c4e</opex:Folder>
           <opex:Folder>Representation_Preservation/a25d33f3-7726-4fb3-8e6f-f66358451c4e/Generation_1</opex:Folder>
-          <opex:Folder>Representation_Preservation</opex:Folder>
+          <opex:Folder>Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793</opex:Folder>
+          <opex:Folder>Representation_Preservation/feedd76d-e368-45c8-96e3-c37671476793/Generation_1</opex:Folder>
         </opex:Folders>
         <opex:Files>
           <opex:File type="metadata" size="2463">68b1c80b-36b8-4f0f-94d6-92589002d87e.xip</opex:File>
