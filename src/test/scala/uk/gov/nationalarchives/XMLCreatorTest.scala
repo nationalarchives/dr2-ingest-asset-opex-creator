@@ -7,11 +7,9 @@ import uk.gov.nationalarchives.DynamoFormatters._
 
 import java.time.OffsetDateTime
 import java.util.UUID
-import scala.xml.{Elem, PrettyPrinter}
+import scala.xml.Elem
 
 class XMLCreatorTest extends AnyFlatSpec {
-
-  private val prettyPrinter = new PrettyPrinter(200, 2)
   private val opexNamespace = "http://www.openpreservationexchange.org/opex/v1.2"
   private val ingestDateTime = OffsetDateTime.parse("2023-12-04T10:55:44.848622Z")
 
