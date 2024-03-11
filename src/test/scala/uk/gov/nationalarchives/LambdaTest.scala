@@ -7,7 +7,7 @@ import org.scalatest.matchers.should.Matchers._
 import uk.gov.nationalarchives.testUtils.ExternalServicesTestUtils
 
 import scala.jdk.CollectionConverters._
-import scala.xml.{PrettyPrinter, XML}
+import scala.xml.XML
 
 class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
   val dynamoServer = new WireMockServer(9005)
@@ -136,14 +136,13 @@ class LambdaTest extends AnyFlatSpec with BeforeAndAfterEach {
     val (_, opexPath) = stubPutRequest()
     stubJsonCopyRequest()
     stubDocxCopyRequest()
-    val prettyPrinter = new PrettyPrinter(180, 2)
 
     TestLambda().handleRequest(standardInput, outputStream, null)
 
     val s3UploadRequests = s3Server.getAllServeEvents.asScala
     val opexString = s3UploadRequests.filter(_.getRequest.getUrl == opexPath).head.getRequest.getBodyAsString.split("\n").tail.dropRight(3).mkString("\n")
     val opexXml = XML.loadString(opexString)
-    prettyPrinter.format(opexXml) should equal(prettyPrinter.format(expectedOpex))
+    opexXml should equal(expectedOpex)
   }
 
   "handleRequest" should "return an error if the Dynamo API is unavailable" in {
