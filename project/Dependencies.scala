@@ -2,7 +2,7 @@ import sbt._
 object Dependencies {
   lazy val logbackVersion = "2.23.0"
   lazy val pureConfigVersion = "0.17.6"
-  private val daAwsClientsVersion = "0.1.39"
+  private val daAwsClientsVersion = "0.1.42"
   private val log4CatsVersion = "2.6.0"
 
   lazy val awsCrt = "software.amazon.awssdk.crt" % "aws-crt" % "0.29.11"
