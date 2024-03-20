@@ -6,7 +6,7 @@ object Dependencies {
   private val log4CatsVersion = "2.6.0"
 
   lazy val awsCrt = "software.amazon.awssdk.crt" % "aws-crt" % "0.29.11"
-  lazy val fs2Core = "co.fs2" %% "fs2-core" % "3.9.4"
+  lazy val fs2Core = "co.fs2" %% "fs2-core" % "3.10.0"
   lazy val log4jSlf4j = "org.apache.logging.log4j" % "log4j-slf4j-impl" % logbackVersion
   lazy val log4jCore = "org.apache.logging.log4j" % "log4j-core" % logbackVersion
   lazy val log4jTemplateJson = "org.apache.logging.log4j" % "log4j-layout-template-json" % logbackVersion
